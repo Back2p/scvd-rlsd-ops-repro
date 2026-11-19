@@ -54,6 +54,9 @@ class RLSDCollectionTests(unittest.TestCase):
         self.assertEqual(result['episodes'],2)
         self.assertEqual(result['zero_advantage_groups'],0)
         self.assertEqual(result['total_tokens'],4)
+        self.assertEqual(result['active_tokens'],4)
+        self.assertEqual(result['by_dataset']['cloudops'],dict(groups=1,episodes=2,successes=1,
+            all_correct_groups=0,all_wrong_groups=0,zero_advantage_groups=0,generated_tokens=4,active_tokens=4))
         self.assertEqual(len(result['records']),4)
         self.assertTrue(all('GOLD_CANARY' not in text for text in FakeClient.student_views))
         for record in result['records']:

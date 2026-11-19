@@ -2,6 +2,7 @@
 import argparse
 import concurrent.futures
 import copy
+from collections import Counter, defaultdict
 import hashlib
 import json
 import math
@@ -57,12 +58,19 @@ def collect_rlsd(cfg,rows,tok,publication,batch_index,output,*,privileged=True):
                 append_jsonl(output/'rollout_attempts'/f'batch-{batch_index:06}.jsonl',dict(index=i,status='infra_error',error_type=type(error).__name__,error=str(error)))
         require(not errors,'Incomplete on-policy batch; no optimizer update. Inspect rollout_attempts receipts')
     flat=[];total_tokens=0;zero_groups=0
+    dataset_stats=defaultdict(Counter)
     template_hash=hashlib.sha256(tok.chat_template.encode()).hexdigest()
     for draw in range(len(chosen)):
         group=[e for e in episodes if e['draw']==draw]
         require(len(group)==r['rollouts_per_prompt'],'Incomplete GRPO group')
         adv=grpo_advantages([e['trace']['score'] for e in group])
-        zero_groups+=int(all(a==0 for a in adv))
+        inactive = all(a == 0 for a in adv)
+        zero_groups += int(inactive)
+        stats = dataset_stats[chosen[draw]['dataset']]
+        rewards = [item['trace']['score'] for item in group]
+        stats.update(groups=1, episodes=len(group), successes=sum(rewards),
+                     all_correct_groups=int(all(rewards)), all_wrong_groups=int(not any(rewards)),
+                     zero_advantage_groups=int(inactive))
         for item,advantage in zip(group,adv):
             append_jsonl(output/'rollouts'/f'batch-{batch_index:06}.jsonl',dict(draw=draw,sample=item['sample'],trace=item['trace'],advantage=advantage))
             for turn in item['trace']['turns']:
@@ -72,10 +80,12 @@ def collect_rlsd(cfg,rows,tok,publication,batch_index,output,*,privileged=True):
                 require(response['logprob_semantics']=='untempered_full_vocabulary','Unsupported sampling logprob convention')
                 require(len(actions)==len(old)>0,'Missing actual rollout-time action logprobs')
                 total_tokens+=len(actions)
+                stats.update(generated_tokens=len(actions))
                 if advantage==0:continue
                 prefix=response['prompt_ids']
                 record=dict(input_ids=prefix+actions,labels=[-100]*len(prefix)+actions,
-                            old_logp=old,advantage=advantage)
+                            old_logp=old,advantage=advantage,dataset=chosen[draw]['dataset'])
+                stats.update(active_tokens=len(actions))
                 if privileged:
                     teacher_messages=copy.deepcopy(turn['messages'])
                     teacher_messages[0]['content']+='\n\nTraining-only privileged final answer (not visible to the student):\n'+item['hint']
@@ -84,7 +94,8 @@ def collect_rlsd(cfg,rows,tok,publication,batch_index,output,*,privileged=True):
                     record.update(teacher_ids=teacher_prefix+actions,teacher_labels=[-100]*len(teacher_prefix)+actions)
                 flat.append(record)
     return dict(records=flat,total_tokens=total_tokens,zero_advantage_groups=zero_groups,
-                groups=len(chosen),episodes=len(episodes),mean_reward=sum(e['trace']['score'] for e in episodes)/len(episodes))
+                groups=len(chosen),episodes=len(episodes),by_dataset=dict(dataset_stats),
+                active_tokens=sum(len(r['old_logp']) for r in flat),mean_reward=sum(e['trace']['score'] for e in episodes)/len(episodes))
 
 
 def main():
@@ -129,6 +140,11 @@ def main():
     cfg['_frozen_data_sha256']=file_hash(cfg['frozen_data_manifest'])
     output=Path(args.output).resolve()
     D.primary(lambda:str(new_run(output,args.method,cfg)))
+    coverage=Counter(row['dataset'] for row in rows)
+    accepted=Counter(record['dataset'] for record in records or ())
+    D.primary(lambda:write_json(output/'training_coverage.json',dict(train_cases=coverage,encoded_scvd_records=accepted)))
+    if args.method=='scvd':
+        require(set(accepted)==set(coverage),'SCVD encoding yielded no training records for one or more selected datasets')
     student=D.wrap(cfg,device)
     teacher=D.wrap(cfg,device,frozen=True) if args.method=='rlsd' else None
     learning=cfg['scvd'] if args.method=='scvd' else cfg['rlsd']
@@ -160,6 +176,7 @@ def main():
             last_saved_cursor=dict(cursor)
             D.primary(lambda:D.prune_owned(output,'states',cfg['training']['keep_resume_checkpoints']))
 
+    dataset_index={name:i for i,name in enumerate(cfg['datasets'])}
     if args.method=='scvd':
         b=learning['global_batch_size'];all_batches=[]
         for epoch in range(learning['epochs']):
@@ -173,6 +190,7 @@ def main():
             optimizer.zero_grad(set_to_none=True)
             slots=math.ceil(b/world)
             loss_total=torch.zeros((),device=device)
+            dataset_loss=torch.zeros((len(dataset_index),2),device=device,dtype=torch.float64)
             for slot in range(slots):
                 position=slot*world+rank
                 record=batch[position] if position<len(batch) else {'input_ids':batch[0]['input_ids'][:2],'labels':[-100,-100]}
@@ -181,13 +199,22 @@ def main():
                 loss=nll*world/total_tokens
                 D.assert_finite(loss,'Nonfinite SCVD loss')
                 loss.backward();loss_total+=nll.detach()
+                if position<len(batch):
+                    i=dataset_index[record['dataset']]
+                    dataset_loss[i,0]+=nll.detach()
+                    dataset_loss[i,1]+=value['valid_tokens']
             step=cursor['updates']
             factor=min(1.,(step+1)/warmup) if step<warmup else .5*(1+math.cos(math.pi*(step-warmup)/max(1,len(all_batches)-warmup)))
             for group in optimizer.param_groups:group['lr']=learning['learning_rate']*factor
             norm=student.clip_grad_norm_(learning['max_grad_norm']);D.assert_finite(norm,'Nonfinite SCVD gradient norm')
             optimizer.step();cursor={'updates':step+1,'batches':index+1}
             dist.all_reduce(loss_total)
-            D.primary(lambda:append_jsonl(output/'metrics.jsonl',dict(**cursor,teacher_tokens=total_tokens,teacher_token_nll=loss_total.item()/total_tokens,gradient_norm=norm.item())))
+            dist.all_reduce(dataset_loss)
+            by_dataset={name:dict(teacher_tokens=int(count),teacher_token_nll=nll/count)
+                        for name,(nll,count) in zip(dataset_index,dataset_loss.tolist()) if count}
+            D.primary(lambda:append_jsonl(output/'metrics.jsonl',dict(**cursor,teacher_tokens=total_tokens,
+                teacher_token_nll=loss_total.item()/total_tokens,gradient_norm=norm.item(),
+                learning_rate=learning['learning_rate']*factor,by_dataset=by_dataset)))
             checkpoint_if_due()
         if cursor['updates']!=int(Path(publication['path']).name.split('-')[1]):
             publication=D.publish(student,tok,output,cursor['updates'],cfg)
@@ -199,6 +226,8 @@ def main():
             if not local_records:continue
             total_tokens=batch['total_tokens'];optimizer.zero_grad(set_to_none=True)
             loss_total=torch.zeros((),device=device);max_drift=torch.zeros((),device=device)
+            dataset_weights=torch.zeros((len(dataset_index),3),device=device,dtype=torch.float64)
+            lam=mixture(cursor['updates']+1,learning['lambda_start'],learning['lambda_decay_steps']) if teacher is not None else 0.
             for record in local_records:
                 real=not record['padding']
                 old=torch.tensor(record['old_logp'],device=device,dtype=torch.float32)
@@ -206,8 +235,14 @@ def main():
                     with torch.no_grad():teacher_lp=teacher(**inputs(record,True))['log_probs'].detach()
                     D.assert_finite(teacher_lp,'Nonfinite frozen-teacher logprob')
                     weights=rlsd_weights(record['advantage'],teacher_lp,old,
-                        lam=mixture(cursor['updates']+1,learning['lambda_start'],learning['lambda_decay_steps']),evidence_clip=learning['evidence_clip'])
+                        lam=lam,evidence_clip=learning['evidence_clip'])
                 else:weights=torch.ones_like(old)
+                if real:
+                    i=dataset_index[record['dataset']]
+                    deviation=(weights-1).abs()
+                    dataset_weights[i,0]+=weights.numel()
+                    dataset_weights[i,1]+=(deviation>1e-6).sum()
+                    dataset_weights[i,2]+=deviation.sum(dtype=torch.float64)
                 value=student(**inputs(record));new=value['log_probs']
                 drift=(new.detach()-old).abs().max() if real else torch.zeros((),device=device)
                 dist.all_reduce(drift,op=dist.ReduceOp.MAX);max_drift=torch.maximum(max_drift,drift)
@@ -222,8 +257,14 @@ def main():
             optimizer.step();cursor['updates']+=1
             if teacher is not None and cursor['updates']%learning['teacher_sync_steps']==0:D.sync_teacher(student,teacher)
             dist.all_reduce(loss_total)
+            dist.all_reduce(dataset_weights)
+            by_dataset={name:dict(active_tokens=int(count),reweighted_tokens=int(changed),
+                                  mean_abs_weight_delta=delta/count)
+                        for name,(count,changed,delta) in zip(dataset_index,dataset_weights.tolist()) if count}
             D.primary(lambda:append_jsonl(output/'metrics.jsonl',dict(**cursor,policy_token_loss=loss_total.item()/total_tokens,
-                max_logprob_drift=max_drift.item(),gradient_norm=norm.item())))
+                max_logprob_drift=max_drift.item(),gradient_norm=norm.item(),learning_rate=learning['learning_rate'],
+                teacher_lambda=lam,active_tokens=batch['active_tokens'],generated_tokens=total_tokens,
+                by_dataset=by_dataset)))
             publication=D.publish(student,tok,output,cursor['updates'],cfg)
             D.primary(reload_all)
             checkpoint_if_due()

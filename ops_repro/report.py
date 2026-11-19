@@ -55,29 +55,62 @@ def summarize_run(run):
                         elif row['status']=='infra_error':infra+=1
                         else:scored+=1;correct+=row['score']
                 summaries.append(dict(run_id=run.name,arm=cfg['_arm'],dataset=dataset,mode=mode,split='+'.join(splits),
+                    model_revision=next(iter(revisions),None),checkpoint_sha256=next(iter(checkpoints),None),
                     expected_attempts=planned,scored_attempts=scored,infra_errors=infra,missing=missing,correct=correct,
                     accuracy=correct/planned if scored==planned else None,publishable=scored==planned,
                     protocol_sha256=receipt['protocol_sha256']))
     return summaries,badcases,inputs,receipt
 
 
+def incomplete_suite(rows):
+    expected = {'cloudops':(75,75), 'openrca':(13,43), 'cujbench':(14,14), 'itbench_aa':(7,5)}
+    cells = defaultdict(list)
+    identities = defaultdict(set)
+    for row in rows:
+        key = (row['arm'], row['dataset'], row['mode'], row['split'])
+        if row['split'] in ('val','test'):
+            cells[key].append(row)
+            if row['publishable']:
+                identities[row['arm']].add((row['model_revision'],row['checkpoint_sha256']))
+    issues = []
+    for arm in ('base_9b','scvd','rlsd','base_27b'):
+        if len(identities[arm])>1:
+            issues.append(dict(arm=arm,issue='different frozen policy across official evaluation cells'))
+        for dataset,sizes in expected.items():
+            for mode in ('nonthinking','thinking'):
+                for split,size in zip(('val','test'),sizes):
+                    matching = cells[(arm,dataset,mode,split)]
+                    if len(matching)!=1 or not matching[0]['publishable'] or matching[0]['expected_attempts']!=size*3:
+                        issues.append(dict(arm=arm,dataset=dataset,mode=mode,split=split,
+                                           expected_attempts=size*3,run_count=len(matching),
+                                           complete_runs=sum(row['publishable'] for row in matching)))
+    return issues
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--runs',nargs='+',required=True)
     parser.add_argument('--output',required=True)
+    parser.add_argument('--full-suite',action='store_true',help='Flag missing, incomplete or duplicate four-arm evaluation cells')
     args=parser.parse_args();output=Path(args.output)
     require(not output.exists(),'Report directory already exists; use a new version')
     output.mkdir(parents=True)
     all_rows=[];first_inputs={};protocol=None;comparison_issues=[]
+    reference=None
     for run in args.runs:
         rows,bad,inputs,receipt=summarize_run(run);all_rows.extend(rows)
+        identity=(receipt['split_manifest_sha256'],receipt['config'].get('seed'))
+        if reference is None:reference=identity
+        elif identity!=reference:comparison_issues.append(dict(run=str(run),issue='split manifest or evaluation seed differs'))
         if protocol is None:protocol=receipt['protocol_sha256']
         elif receipt['protocol_sha256']!=protocol:comparison_issues.append(dict(run=str(run),issue='protocol differs'))
         for key,value in inputs.items():
             if key in first_inputs and first_inputs[key]!=value:comparison_issues.append(dict(run=str(run),case=key,issue='actor input differs'))
             first_inputs.setdefault(key,value)
         for record in bad:append_jsonl(output/'badcases.jsonl',dict(run=str(run),**record))
+    coverage_issues=incomplete_suite(all_rows) if args.full_suite else []
     write_json(output/'summary.json',dict(results=all_rows,comparison_issues=comparison_issues,
+        full_suite_checked=args.full_suite,coverage_issues=coverage_issues,
         statistical_scope='Mean single-attempt strict accuracy; not pass@3; no significance inferred',
         original_html_comparability='Unknown original API; this is snapshot-reference-v2 only'))
     with (output/'summary.csv').open('w',newline='') as stream:
@@ -93,7 +126,11 @@ def main():
     lines.extend(['','协议/输入不一致项：'+str(len(comparison_issues))+'；存在不一致时不作方法增益归因。',
         '', 'badcase 自动分类只用于初筛；根因需回看 traces.jsonl 的工具证据、截断位置、提交内容和评分规则。',
         '', '待验证的改进方向：①依据错误候选的真实证据缺口补充 SCVD 核查/纠错覆盖；②先检查 RLSD 全对/全错组比例及 token 权重分布，再在训练集内研究采样分配。未运行改进实验前不声称收益。'])
+    if args.full_suite:
+        lines.extend(['', f'四数据集正式评测不完整或重复的单元数：{len(coverage_issues)}。详见 summary.json。'])
     (output/'报告.md').write_text('\n'.join(lines)+'\n')
+    if args.full_suite and (coverage_issues or comparison_issues):
+        raise SystemExit(2)
 
 
 if __name__=='__main__':main()

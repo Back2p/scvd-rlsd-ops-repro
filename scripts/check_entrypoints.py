@@ -14,7 +14,7 @@ def main():
         entry=dict(check=label,returncode=result.returncode)
         if result.returncode:entry['error']=result.stderr[-2500:]
         checks.append(entry)
-    modules=('prepare','doctor','worker','collect','encode','train','evaluate','report','control','qualify')
+    modules=('prepare','doctor','worker','collect','encode','train','evaluate','report','control','qualify','diagnostics')
     for name in modules:run(name+' --help',[sys.executable,'-m','ops_repro.'+name,'--help'])
     cfg=['--config','configs/runtime.example.json']
     for method,world in [('scvd',8),('scvd',16),('rlsd',8),('grpo',8)]:
@@ -22,7 +22,7 @@ def main():
     for method in ('scvd','rlsd'):
         run(method+' export plan',[sys.executable,'-m','ops_repro.train',*cfg,'--method',method,'--output','/platform/output/PLAN_ONLY','--resume','/platform/output/TRUSTED_STATE','--export-only','--plan'])
     run('collection plan',[sys.executable,'-m','ops_repro.collect',*cfg,'--output','/platform/output/PLAN_ONLY','--plan'])
-    run('evaluation plan',[sys.executable,'-m','ops_repro.evaluate',*cfg,'--output','/platform/output/PLAN_ONLY','--split','eval','--policy-revision','c202236235762e1c871ad0ccb60c8ee5ba337b9a','--arm','base_9b','--plan'])
+    run('evaluation plan',[sys.executable,'-m','ops_repro.evaluate',*cfg,'--output','/platform/output/PLAN_ONLY','--split','eval','--policy-revision','c202236235762e1c871ad0ccb60c8ee5ba337b9a','--arm','base_9b','--full-suite','--plan'])
     run('download freeze plan',[sys.executable,'-m','ops_repro.prepare',*cfg,'--download','model','cloudops','openrca','cujbench','itbench_aa','--freeze-data','--plan'])
     run('zero update qualification plan',[sys.executable,'-m','ops_repro.qualify',*cfg,'--sequence-length','32768','--output','/platform/output/PLAN_ONLY','--plan'])
     for script in sorted((ROOT/'scripts').glob('*.sh')):run(script.name+' syntax',['bash','-n',str(script)])

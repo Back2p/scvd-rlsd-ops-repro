@@ -43,3 +43,5 @@ python -m ops_repro.prepare --config "$CONFIG" --download model cloudops itbench
 gold、评分、训练 hint 均在协调端。模型工具仅接受证据 ID；ITBench 采用观测白名单，CUJ 不给截图。SCVD 强教师不读取 gold；RLSD hint 只出现在 train 冻结教师前向中。val/test 不进入采集。评测缺失/基础设施错误不删分母，正式 accuracy 留空并单列覆盖率。
 
 活动入口位于 `ops_repro/`；`src/` 只保留实际使用的数据、编码与审计工具。旧 Protocol 空接口、旧 readiness 草稿和未参与运行的上游框架已从本交付版移除。`reference/` 保留论文配置/来源锁，`tests/fixtures/` 仅保留官方公式回归片段；本包不声称原论文逐数值复现。复查结果见 [reports/代码复查报告.md](reports/代码复查报告.md)。
+
+正式评测加 `--full-suite`，可在运行前核对四个数据集、两种模式和三次重复。训练后用 `python -m ops_repro.diagnostics` 由日志生成曲线。四数据集覆盖与奖励诊断的命令及解释见 [RUNBOOK 末节](RUNBOOK.md#四数据集覆盖与训练诊断)。

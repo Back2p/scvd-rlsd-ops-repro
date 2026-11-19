@@ -1,10 +1,11 @@
 import argparse
 import concurrent.futures
+from collections import Counter
 import json
 from pathlib import Path
 
 from .clients import TokenClient
-from .common import ROOT,admit_data,append_jsonl,cases,config,digest,file_hash,new_run,seed_for,write_json
+from .common import ROOT,admit_data,append_jsonl,cases,config,digest,file_hash,new_run,require,seed_for,write_json
 from .datasets import SnapshotCase
 from .rollout import episode
 
@@ -17,11 +18,20 @@ def main():
     parser.add_argument('--policy-revision',required=True)
     parser.add_argument('--arm',choices=['base_9b','base_27b','scvd','rlsd','grpo'],required=True)
     parser.add_argument('--plan',action='store_true')
+    parser.add_argument('--full-suite',action='store_true',help='Require all four HTML-aligned data splits, both modes and three trials')
     args=parser.parse_args();cfg=config(args.config)
     rows=[r for r in cases(cfg) if r['split'] in (('val','test') if args.split=='eval' else (args.split,))]
+    counts = Counter(row['dataset'] for row in rows)
+    if args.full_suite:
+        split_counts = {'cloudops':(75,75), 'openrca':(13,43), 'cujbench':(14,14), 'itbench_aa':(7,5)}
+        expected = {name: sizes[0] if args.split=='val' else sizes[1] if args.split=='test' else sum(sizes)
+                    for name,sizes in split_counts.items()}
+        require(counts == expected, f'Four-dataset coverage differs: expected {expected}, found {dict(counts)}')
+        require(set(cfg['modes'])=={'thinking','nonthinking'} and cfg['evaluation']['repeats']==3,
+                'Full suite requires both thinking modes and three repeats')
     tasks=[(r,mode,trial) for r in rows for mode in cfg['modes'] for trial in range(cfg['evaluation']['repeats'])]
     if args.plan:
-        print(json.dumps(dict(stage='evaluation',cases=len(rows),attempts=len(tasks),split=args.split,model_calls_executed=0),indent=2));return
+        print(json.dumps(dict(stage='evaluation',cases=len(rows),attempts=len(tasks),split=args.split,by_dataset=dict(counts),model_calls_executed=0),indent=2));return
     admit_data(cfg)
     cfg['_evaluation_view']=args.split;cfg['_arm']=args.arm
     output=new_run(args.output,'evaluation',cfg)
@@ -51,7 +61,7 @@ def main():
         for future in concurrent.futures.as_completed(futures):
             result,trace=future.result();append_jsonl(output/'scores.jsonl',result)
             if trace is not None:append_jsonl(output/'traces.jsonl',dict(key={k:result[k] for k in ('dataset','case_id','mode','trial')},trace=trace))
-    write_json(output/'completion.json',dict(planned_attempts=len(tasks),split=args.split,scores_sha256=file_hash(output/'scores.jsonl')))
+    write_json(output/'completion.json',dict(planned_attempts=len(tasks),cases_by_dataset=dict(counts),split=args.split,scores_sha256=file_hash(output/'scores.jsonl')))
 
 
 if __name__=='__main__':main()

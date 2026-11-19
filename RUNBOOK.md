@@ -186,3 +186,32 @@ python -m ops_repro.report --runs /platform/output/base9b-val /platform/output/s
 输出 summary.json、summary.csv、报告.md、badcases.jsonl。缺失/基础设施错误仍保留预定分母，accuracy 留空；未提交、超预算、格式错误记录为模型失败。指标为平均单次 strict accuracy，不是 Pass@3。badcase 自动标签仅初筛，根因需回看 traces 的证据、工具返回、预算、提交和 scorer。
 
 回交 run.json、数据冻结与 SHA、采集/更新/评测完整尝试记录、accepted/held 数量、配置/镜像 digest/环境锁、权重与恢复状态、逐数据集/模式/集合统计及典型案例。代码与 CPU 检查不能代替真实运行证据。
+
+## 四数据集覆盖与训练诊断
+
+正式运行使用 runtime 配置中的四个 datasets，保持两种模式和每题三次。给每条正式 `evaluate` 命令加 `--full-suite`。以下是零模型调用的覆盖检查。
+
+```bash
+python -m ops_repro.evaluate --config "$CONFIG" --arm base_9b --split eval \
+  --policy-revision c202236235762e1c871ad0ccb60c8ee5ba337b9a --output /platform/output/plan-only --full-suite --plan
+```
+
+| 数据集 | Train | Val | Test | Val+Test | Val+Test 尝试数 |
+|---|---:|---:|---:|---:|---:|
+| CloudOps | 604 | 75 | 75 | 150 | 900 |
+| OpenRCA Bank | 80 | 13 | 43 | 56 | 336 |
+| CUJBench | 57 | 14 | 14 | 28 | 168 |
+| ITBench-AA | 19 | 7 | 5 | 12 | 72 |
+
+全量总计 760/109/137，选点后的 Val+Test 每个方法或基线共 1,476 次。最终汇报可用选中的模型各运行一次 `--split eval --full-suite`，出三种口径。也可用同一选定模型的独立 val/test 结果交付。选点过程中评测的其他 checkpoint 不放进正式汇总。对四个正式臂的结果使用 `ops_repro.report --full-suite`，会检查缺失、失败或重复的单元。
+
+训练目录的 `training_coverage.json` 记录四个数据集的训练 case 数和 SCVD 编码记录数。SCVD 每步记录 teacher-token NLL、学习率、梯度范数和每个有监督样本的数据集 NLL。RLSD 每批记录训练奖励、全对/全错组、零优势组、生成和参与更新的 token 数。每步记录 policy loss、梯度范数、采样概率漂移、教师 λ，以及分数据集的实际调权比例和平均权重偏移。
+
+```bash
+python -m ops_repro.diagnostics --run /platform/output/scvd-training --output /platform/output/scvd-curves.html
+python -m ops_repro.diagnostics --run /platform/output/rlsd-training --output /platform/output/rlsd-curves.html
+```
+
+判断收敛时同时看 loss、梯度和同一固定验证集的多检查点曲线。平台可在训练前提高恢复检查点保留数，按预先约定的步数导出并评 val，例如初始、中期、末期。RLSD 各步使用不同在线样本，policy loss 的下降或接近零不足以说明收敛。奖励组内有区分度、并且有参与更新的 token，才说明环境奖励提供了策略梯度信号。调权比例和偏移用于核对教师修正实际进入了多少 token。判断收益需要比较同协议 held-out 结果，RLSD 与同预算 GRPO 的对照用于区分教师调权贡献与环境奖励本身的贡献。
+
+新版实现指纹随代码更新。若此前已生成冻结回执或 SCVD 编码，请用新版新建冻结路径并重新采集、编码。旧版运行保留原版本分析。
