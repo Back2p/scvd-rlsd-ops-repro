@@ -1,0 +1,276 @@
+{
+  "seed": 20261106,
+  "algorithm": "html-marginals-stratum-swaps-v1",
+  "status": "REAL_CASE_ID_SPLITS_RECONSTRUCTED_PAYLOADS_PARTIAL",
+  "datasets": {
+    "cloudops": {
+      "counts": {
+        "train": 604,
+        "val": 75,
+        "test": 75
+      },
+      "train_marginals": {
+        "system": {
+          "boutique": 442,
+          "trainticket": 162
+        },
+        "category": {
+          "admission": 46,
+          "codedefect": 78,
+          "infrastructure": 32,
+          "performance": 60,
+          "runtime": 113,
+          "scheduling": 132,
+          "service": 73,
+          "startup": 70
+        },
+        "difficulty": {
+          "easy": 315,
+          "hard": 138,
+          "medium": 151
+        }
+      },
+      "eval_marginals": {
+        "system": {
+          "boutique": 108,
+          "trainticket": 42
+        },
+        "category": {
+          "admission": 12,
+          "codedefect": 20,
+          "infrastructure": 8,
+          "performance": 16,
+          "runtime": 28,
+          "scheduling": 32,
+          "service": 18,
+          "startup": 16
+        },
+        "difficulty": {
+          "easy": 76,
+          "hard": 36,
+          "medium": 38
+        }
+      },
+      "observed_group_overlap": {},
+      "membership": "reconstructed; publisher ID membership not confirmed",
+      "files": {
+        "train": "266c1147c556ba8c215ab2e25f068b9efc12439e0b31a024951d1ca2f88498b3",
+        "val": "9c058905a20b60657c3454ab7cb9cb6cd4a8b6b4db44d68b9b97e1c45495f8af",
+        "test": "4eabc2772680bc0cf0152d6d549d3df60a644b3f2d468890e6d9426060d5f651",
+        "eval": "911a505e36128252cb80c8ea21902221bf3733e0a6824a9f868c0dfa98946d97"
+      },
+      "marginal_swap_steps": 2
+    },
+    "cujbench": {
+      "counts": {
+        "train": 57,
+        "val": 14,
+        "test": 14
+      },
+      "train_marginals": {
+        "app": {
+          "otel-demo": 44,
+          "tractor-store": 13
+        },
+        "difficulty": {
+          "easy": 3,
+          "hard": 18,
+          "medium": 36
+        },
+        "injection": {
+          "asset_block": 2,
+          "compound": 14,
+          "delay": 13,
+          "flagd": 2,
+          "header_mutation": 1,
+          "http_error": 14,
+          "json_shape_mutation": 1,
+          "response_body": 6,
+          "unlabelled": 3,
+          "url_rewrite": 1
+        }
+      },
+      "eval_marginals": {
+        "app": {
+          "otel-demo": 14,
+          "tractor-store": 14
+        },
+        "difficulty": {
+          "easy": 2,
+          "hard": 7,
+          "medium": 19
+        },
+        "injection": {
+          "asset_block": 2,
+          "compound": 4,
+          "delay": 3,
+          "flagd": 2,
+          "header_mutation": 2,
+          "http_error": 6,
+          "json_shape_mutation": 1,
+          "response_body": 4,
+          "unlabelled": 4
+        }
+      },
+      "observed_group_overlap": {},
+      "membership": "reconstructed; publisher ID membership not confirmed",
+      "files": {
+        "train": "0bc06804f7ddc73f97037603092bc01b434dbab7c704c3f32ca1b1167ed75fe0",
+        "val": "23cb9fc7361b828ef4bb3be3d74d7ed1038d74f5d71a36e00a4d0b1f1539bcf0",
+        "test": "22afdea462d28d5bfea3fdb65b4afb925c787d3f9012f259d904764808eef1b8",
+        "eval": "aba4e2a1bb60d23a888e778ad705b37b7c1b6ffb07ceee7dee7950fa7937fa33"
+      },
+      "excluded": [
+        {
+          "case_id": "SCEN-001-baseline",
+          "reason": "healthy_no_injected_failure",
+          "valid_public_case": true,
+          "exclusion_status": "inferred_HTML_85_pool"
+        },
+        {
+          "case_id": "SCEN-100-ts-baseline",
+          "reason": "healthy_no_injected_failure",
+          "valid_public_case": true,
+          "exclusion_status": "inferred_HTML_85_pool"
+        }
+      ],
+      "marginal_swap_steps": 2
+    },
+    "openrca": {
+      "counts": {
+        "train": 80,
+        "val": 13,
+        "test": 43
+      },
+      "train_marginals": {
+        "date": {
+          "2021-03-04": 16,
+          "2021-03-06": 11,
+          "2021-03-07": 16,
+          "2021-03-09": 21,
+          "2021-03-10": 16
+        }
+      },
+      "eval_marginals": {
+        "date": {
+          "2021-03-12": 13,
+          "2021-03-23": 14,
+          "2021-03-24": 10,
+          "2021-03-25": 19
+        }
+      },
+      "observed_group_overlap": {},
+      "membership": "reconstructed; publisher ID membership not confirmed",
+      "files": {
+        "train": "c885e11b4b5e876291ef10858f3cdacbd666eaa7ce3855a04f0ac4f4c226cebf",
+        "val": "c4f0efe7439913ae4382af3a30ac6a686296037eaf0476ce55ffe33f181bc302",
+        "test": "1bc6392a7a7a5f0e07b28fdf02419966c142c932ac65388f258a367533da319a",
+        "eval": "153ef1adf2ac125239bc23877ddc7ff1ee09b923e9f871920c11a302cc744cb1"
+      },
+      "val_test_boundary_status": "Inferred chronological boundary: March 12 = 13 val queries; March 23/24/25 = 43 test queries. HTML gives only the aggregate eval dates."
+    },
+    "itbench_aa": {
+      "counts": {
+        "train": 19,
+        "val": 7,
+        "test": 5
+      },
+      "train_marginals": {
+        "category": {
+          "Change": 1,
+          "Compound": 9,
+          "Configuration": 1,
+          "Configuration Setting": 1,
+          "Latency": 1,
+          "Network": 2,
+          "Other": 1,
+          "Resource": 1,
+          "Resource Unavailable": 1,
+          "custom": 1
+        }
+      },
+      "eval_marginals": {
+        "category": {
+          "Change": 2,
+          "Compound": 2,
+          "Configuration": 2,
+          "Network": 2,
+          "Other": 1,
+          "Resource": 2,
+          "Resource Unavailable": 1
+        }
+      },
+      "observed_group_overlap": {},
+      "membership": "reconstructed; publisher ID membership not confirmed",
+      "files": {
+        "train": "1946f66057e917360f1976212b9ca8f61a2b833741e352f1d6f764c788903ca4",
+        "val": "618bc309392d7d1d0b948b52c9292ad7fbf0b43eab68c8dd3b92d4f16cf10496",
+        "test": "ac603e70c3f2e7aded5acfe2486f2d26d6ab6a9bb9dc0e6803b832a978af99a4",
+        "eval": "e5d1426030a958c451cc0b02cdd6c35fa8f74766c44ca2f06a6526ad2b8f213e"
+      },
+      "excluded": [
+        {
+          "case_id": "Scenario-3",
+          "reason": "nested_spec_schema_outside_inferred_HTML_31_pool",
+          "valid_public_case": true,
+          "exclusion_status": "inferred_from_exact_HTML_category_totals"
+        },
+        {
+          "case_id": "Scenario-20",
+          "reason": "nested_spec_schema_outside_inferred_HTML_31_pool",
+          "valid_public_case": true,
+          "exclusion_status": "inferred_from_exact_HTML_category_totals"
+        },
+        {
+          "case_id": "Scenario-23",
+          "reason": "nested_spec_schema_outside_inferred_HTML_31_pool",
+          "valid_public_case": true,
+          "exclusion_status": "inferred_from_exact_HTML_category_totals"
+        },
+        {
+          "case_id": "Scenario-26",
+          "reason": "nested_spec_schema_outside_inferred_HTML_31_pool",
+          "valid_public_case": true,
+          "exclusion_status": "inferred_from_exact_HTML_category_totals"
+        },
+        {
+          "case_id": "Scenario-27",
+          "reason": "nested_spec_schema_outside_inferred_HTML_31_pool",
+          "valid_public_case": true,
+          "exclusion_status": "inferred_from_exact_HTML_category_totals"
+        },
+        {
+          "case_id": "Scenario-31",
+          "reason": "nested_spec_schema_outside_inferred_HTML_31_pool",
+          "valid_public_case": true,
+          "exclusion_status": "inferred_from_exact_HTML_category_totals"
+        },
+        {
+          "case_id": "Scenario-37",
+          "reason": "nested_spec_schema_outside_inferred_HTML_31_pool",
+          "valid_public_case": true,
+          "exclusion_status": "inferred_from_exact_HTML_category_totals"
+        },
+        {
+          "case_id": "Scenario-40",
+          "reason": "nested_spec_schema_outside_inferred_HTML_31_pool",
+          "valid_public_case": true,
+          "exclusion_status": "inferred_from_exact_HTML_category_totals"
+        },
+        {
+          "case_id": "Scenario-105",
+          "reason": "nested_spec_schema_outside_inferred_HTML_31_pool",
+          "valid_public_case": true,
+          "exclusion_status": "inferred_from_exact_HTML_category_totals"
+        }
+      ],
+      "pool_status": "legacy-flat-31 pool inferred from exact HTML category totals; all 40 normalized separately"
+    }
+  },
+  "not_proven": [
+    "same case membership as project party",
+    "full semantic/variant-family isolation",
+    "CloudOps/OpenRCA/ITBench telemetry available on target platform",
+    "actor input hashes and tool/scorer integration"
+  ]
+}

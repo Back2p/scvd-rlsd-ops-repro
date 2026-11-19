@@ -1,0 +1,7 @@
+datasets/
+**/__pycache__/
+**/*.pyc
+**/*.tar.gz
+.venv/
+.git/
+checkpoints/

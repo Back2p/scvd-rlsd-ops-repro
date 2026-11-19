@@ -1,0 +1,80 @@
+{
+  "field": "root_cause.component",
+  "scope": "app",
+  "app": "tractor-store",
+  "version": 1,
+  "semantics": "Use the primary owning subsystem within the tractor-store app. Prefer page/subsystem ownership over endpoint names, DOM elements, or file-path details.",
+  "values": [
+    {
+      "name": "none",
+      "description": "No faulty component; healthy baseline.",
+      "maps_from": [
+        "none"
+      ]
+    },
+    {
+      "name": "decide",
+      "description": "The decide/home experience and its directly owned assets.",
+      "maps_from": [
+        "decide frontend module script",
+        "decide frontend static assets"
+      ]
+    },
+    {
+      "name": "explore",
+      "description": "Category browsing, explore data fetches, and explore page rendering.",
+      "maps_from": [
+        "explore API",
+        "explore category API",
+        "explore category API path",
+        "explore category fragment",
+        "explore frontend static assets"
+      ]
+    },
+    {
+      "name": "cart",
+      "description": "Cart page, minicart, cart item mutations, cart state propagation, and cart persistence.",
+      "maps_from": [
+        "checkout cart cookie persistence",
+        "checkout cart page",
+        "checkout cart item API",
+        "checkout cart-item fragment",
+        "checkout minicart API",
+        "checkout minicart API path",
+        "checkout minicart custom element"
+      ]
+    },
+    {
+      "name": "checkout",
+      "description": "Checkout flow surfaces not better attributed to cart or store selection.",
+      "maps_from": [
+        "checkout add-to-cart custom element",
+        "checkout cart-item request body"
+      ]
+    },
+    {
+      "name": "store",
+      "description": "Store selection and store-scoped event propagation.",
+      "maps_from": [
+        "checkout page store-selection listener",
+        "explore store picker event dispatch"
+      ]
+    },
+    {
+      "name": "frontend",
+      "description": "Shared frontend assets and page-level runtime surfaces that are not specific to one business subsystem.",
+      "maps_from": [
+        "checkout frontend module script",
+        "checkout frontend stylesheet",
+        "checkout static asset path"
+      ]
+    },
+    {
+      "name": "platform",
+      "description": "Browser/runtime platform surfaces such as Content Security Policy.",
+      "maps_from": [
+        "page Content Security Policy"
+      ]
+    }
+  ]
+}

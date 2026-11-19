@@ -1,0 +1,117 @@
+{
+  "cases": "splits/all_cases.jsonl",
+  "datasets": [
+    "cloudops",
+    "openrca",
+    "cujbench",
+    "itbench_aa"
+  ],
+  "seed": 20261106,
+  "modes": [
+    "nonthinking",
+    "thinking"
+  ],
+  "model": {
+    "id": "Qwen/Qwen3.5-27B",
+    "revision": "fc05daec18b0a78c049392ed2e771dde82bdf654",
+    "path": "/platform/models/Qwen3.5-27B",
+    "attention": "sdpa"
+  },
+  "data_roots": {
+    "cloudops": "/platform/data/cloudops",
+    "openrca": "/platform/data/openrca",
+    "cujbench": "/platform/data/cujbench",
+    "itbench_aa": "/platform/data/itbench_aa"
+  },
+  "frozen_data_manifest": "/platform/data/snapshot-reference-v2-freeze.json",
+  "protocol": {
+    "name": "snapshot-reference-v2",
+    "original_html_directly_comparable": false,
+    "tools": "read-only snapshot evidence + explicit draft/final diagnosis",
+    "cloudops_metric": "fault_object and root_cause exact casefold match",
+    "cujbench_metric": "official canonical component AND type; layer/evidence not primary",
+    "itbench_metric": "complete responsible entity groups, gold aliases and filters, reject extras",
+    "openrca_metric": "all native scoring_points satisfied; datetime tolerance <=60s",
+    "scope": "method migration on reconstructed HTML-compatible case splits; baseline must be rerun under this protocol"
+  },
+  "rollout": {
+    "endpoints": [
+      "http://127.0.0.1:8200",
+      "http://127.0.0.1:8201",
+      "http://127.0.0.1:8202",
+      "http://127.0.0.1:8203",
+      "http://127.0.0.1:8204",
+      "http://127.0.0.1:8205",
+      "http://127.0.0.1:8206",
+      "http://127.0.0.1:8207"
+    ],
+    "api_key_env": null,
+    "max_context": 30720
+  },
+  "teacher": {
+    "url": null,
+    "model": null,
+    "revision": null,
+    "api_key_env": "TEACHER_API_KEY",
+    "extra_body": {},
+    "mode_extra_body": {},
+    "nonthinking_reasoning": "omit_from_supervision",
+    "message_reasoning_format": "inline"
+  },
+  "budget": {
+    "max_turns": 24,
+    "max_tool_calls": 40,
+    "max_new_tokens": 2048,
+    "max_generated_tokens": 16384,
+    "max_context": 32768
+  },
+  "sampling": {
+    "temperature": 1.0,
+    "top_p": 1.0,
+    "top_k": 0
+  },
+  "scvd": {
+    "samples_per_case_mode": 1,
+    "epochs": 3,
+    "global_batch_size": 64,
+    "learning_rate": 1e-05,
+    "warmup_ratio": 0.03,
+    "weight_decay": 0.01,
+    "max_grad_norm": 1.0,
+    "loss_reduction": "global_teacher_token_mean"
+  },
+  "rlsd": {
+    "prompt_batch_size": 256,
+    "rollouts_per_prompt": 8,
+    "max_updates": 200,
+    "max_rollout_batches": 1000,
+    "learning_rate": 1e-06,
+    "weight_decay": 0.01,
+    "max_grad_norm": 1.0,
+    "lambda_start": 0.5,
+    "lambda_decay_steps": 50,
+    "teacher_sync_steps": 10,
+    "evidence_clip": 0.2,
+    "clip_low": 0.2,
+    "clip_high": 0.28,
+    "clip_dual": 3.0,
+    "max_logprob_drift": 0.1,
+    "loss_reduction": "global_generated_token_mean",
+    "ppo_epochs": 1
+  },
+  "training": {
+    "projection_chunk_size": 64,
+    "save_every": 10,
+    "keep_resume_checkpoints": 2,
+    "keep_inference_publications": 1,
+    "retention_scope": "only owned artifacts in a newly created run directory; never source data or historical runs",
+    "control_timeout_seconds": 86400,
+    "collective_timeout_seconds": 1800
+  },
+  "evaluation": {
+    "repeats": 3,
+    "checkpoint_selection": "val only",
+    "final_test": "test",
+    "external_reference_view": "val+test"
+  }
+}

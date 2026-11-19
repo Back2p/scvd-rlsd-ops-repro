@@ -1,0 +1,4479 @@
+[
+  {
+    "scenario_id": "SCEN-001-baseline",
+    "cuj": "all",
+    "injection_type": "none",
+    "params": {},
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Healthy all-CUJ baseline \u2014 no fault injected; checkout, browse, reviews, cart, and currency all pass cleanly",
+    "taxonomy": {
+      "injection_class": "none",
+      "modality_requirement": 1,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 1,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.3333,
+      "difficulty": "Easy"
+    },
+    "expected_cuj_outcome": {
+      "status": "pass",
+      "failure_mode": null,
+      "expected_source": "healthy no-fault baseline across all CUJ specs",
+      "expected_user_signal": "Checkout, browse, reviews, cart, and currency synthetic users should complete without retry, failure, or degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-002-checkout-http-500",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/checkout",
+      "status": 500
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout API returns HTTP 500 \u2014 proxy intercepts before backend",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 500 for /api/checkout",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "status": 500
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-003-checkout-delay-10s",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/api/checkout",
+      "delay_ms": 10000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout API delayed 10s \u2014 HAR timing + Jaeger latency both diagnostic",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /api/checkout by 10000ms",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-004-product-catalog-null",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "response_body",
+      "path_pattern": "/api/products",
+      "transform": "null_products"
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Products API returns null \u2014 HTTP 200 but blank UI; root cause only in HAR body",
+    "taxonomy": {
+      "injection_class": "fault_proxy/response_body",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.6,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy rewrites /api/products response body with transform=null_products",
+      "expected_user_signal": "Product listing or product detail content should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/products"
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-005-cart-failure",
+    "cuj": "checkout",
+    "injection_type": "flagd",
+    "params": {
+      "flag": "cartFailure",
+      "variant": "on"
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": false,
+    "description": "Cart service failures via flagd \u2014 cart RPC errors in Jaeger",
+    "taxonomy": {
+      "injection_class": "flagd/error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "CartService.EmptyCart returns an error when checkout tries to clear the cart",
+      "expected_user_signal": "The checkout synthetic user should observe the cart-empty action fail before checkout can proceed.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "cartservice"
+          }
+        },
+        {
+          "family": "trace",
+          "match": {
+            "operation_contains": "EmptyCart",
+            "error": true
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-006-product-catalog-failure",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/products",
+      "status": 503
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Product catalog API failure \u2014 /api/products returns HTTP 503 and the product grid cannot render",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 503 for /api/products",
+      "expected_user_signal": "The checkout synthetic user should observe the product grid fail before an item can be selected.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/products",
+            "status": 503
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-007-payment-unreachable",
+    "cuj": "checkout",
+    "injection_type": "flagd",
+    "params": {
+      "flag": "paymentUnreachable",
+      "variant": "on"
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Payment service unreachable via flagd \u2014 connection refused in backend traces",
+    "taxonomy": {
+      "injection_class": "flagd/error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "paymentservice endpoint is unreachable from checkoutservice",
+      "expected_user_signal": "The checkout synthetic user should observe checkout failure, timeout, or a materially degraded checkout path.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "paymentservice"
+          }
+        },
+        {
+          "family": "trace",
+          "match": {
+            "operation_contains": "PaymentService",
+            "error": true
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-008-payment-failure-100pct",
+    "cuj": "checkout",
+    "injection_type": "flagd",
+    "params": {
+      "flag": "paymentFailure",
+      "variant": "100%"
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "100% payment failure via flagd \u2014 deterministic payment error",
+    "taxonomy": {
+      "injection_class": "flagd/error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "paymentservice Charge returns payment processing errors according to the active failure percentage",
+      "expected_user_signal": "The checkout synthetic user should observe checkout failure, timeout, or a materially degraded checkout path.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "paymentservice"
+          }
+        },
+        {
+          "family": "trace",
+          "match": {
+            "operation_contains": "PaymentService",
+            "error": true
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-009-ad-failure",
+    "cuj": "browse",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/data",
+      "status": 503
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Ad API failure during browse \u2014 /api/data returns HTTP 503 while viewing product details and recommendations",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 503 for /api/data, the frontend ad-data API backed by adservice",
+      "expected_user_signal": "The browse synthetic user should observe ad content failure while viewing product detail recommendations.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/data",
+            "status": 503
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-010-checkout-http-503",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/checkout",
+      "status": 503
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout returns 503 \u2014 proxy intercepts before backend; only HAR shows error",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 503 for /api/checkout",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "status": 503
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-011-checkout-http-404",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/checkout",
+      "status": 404
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout endpoint returns 404 \u2014 proxy intercepts; no checkout span in Jaeger",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 404 for /api/checkout",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "status": 404
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-012-products-http-500",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/products",
+      "status": 500
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Products API returns 500 \u2014 proxy intercepts; no product catalog span in Jaeger",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 500 for /api/products",
+      "expected_user_signal": "Product listing or product detail content should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/products",
+            "status": 500
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-013-products-http-404",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/products",
+      "status": 404
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Products API returns 404 \u2014 proxy intercepts; missing products show in HAR",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 404 for /api/products",
+      "expected_user_signal": "Product listing or product detail content should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/products",
+            "status": 404
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-014-cart-http-500",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/cart",
+      "status": 500
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Cart API returns 500 \u2014 proxy intercepts; add-to-cart fails in HAR; no backend trace",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 500 for /api/cart",
+      "expected_user_signal": "Cart add/read/update behavior should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/cart",
+            "status": 500
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-015-image-slow-5s",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/images/products/",
+      "delay_ms": 5000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Product images delayed 5s by fault-proxy \u2014 browser image requests exceed the CUJ visual budget",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /images/products/ by 5000ms",
+      "expected_user_signal": "Product images should not paint within the synthetic user visual-load budget.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/images/products/",
+            "min_time_ms": 3000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-016-cart-empty",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "response_body",
+      "path_pattern": "/api/cart",
+      "transform": "empty_cart"
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Cart always appears empty after add \u2014 proxy transforms response; HTTP 200 but items=[]",
+    "taxonomy": {
+      "injection_class": "fault_proxy/response_body",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.6667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy rewrites /api/cart response body with transform=empty_cart",
+      "expected_user_signal": "Cart add/read/update behavior should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/cart"
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-017-products-delay-10s",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/api/products",
+      "delay_ms": 10000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Products load 10s slow - HAR shows timing; Jaeger shows catalog span latency",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /api/products by 10000ms",
+      "expected_user_signal": "Product listing or product detail content should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/products",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-018-cart-delay-10s",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/api/cart",
+      "delay_ms": 10000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Cart operations 10s slow - HAR timing + Jaeger cart span latency both diagnostic",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /api/cart by 10000ms",
+      "expected_user_signal": "Cart add/read/update behavior should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/cart",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-019-checkout-delay-10s",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/api/checkout",
+      "delay_ms": 10000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout very slow (10s) \u2014 HAR timing + Jaeger latency",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /api/checkout by 10000ms",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "min_time_ms": 6000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-020-payment-100pct-plus-checkout-delay",
+    "cuj": "checkout",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "paymentFailure",
+        "variant": "100%"
+      },
+      "proxy": {
+        "type": "delay",
+        "path_pattern": "/api/checkout",
+        "delay_ms": 3000
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Compound: 100% payment failure + 3s checkout delay \u2014 payment errors visible in Jaeger, delay visible in HAR timing",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "paymentservice Charge returns payment processing errors according to the active failure percentage + fault-proxy delays /api/checkout by 3000ms",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "paymentservice"
+          }
+        },
+        {
+          "family": "trace",
+          "match": {
+            "operation_contains": "PaymentService",
+            "error": true
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "min_time_ms": 1800
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-021-product-failure-plus-delay",
+    "cuj": "checkout",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "productCatalogFailure",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "delay",
+        "path_pattern": "/api/products",
+        "delay_ms": 10000
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Compound: product catalog change signal + 10s product API delay",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "productcatalogservice change signal is present while fault-proxy delays /api/products by 10000ms",
+      "expected_user_signal": "Product listing or product detail content should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "productcatalogservice"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/products",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-022-cart-failure-plus-delay",
+    "cuj": "checkout",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "cartFailure",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "delay",
+        "path_pattern": "/api/cart",
+        "delay_ms": 10000
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Compound: cart backend failure + 10s cart delay",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "CartService.EmptyCart returns an error when checkout tries to clear the cart + fault-proxy delays /api/cart by 10000ms",
+      "expected_user_signal": "Cart add/read/update behavior should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "cartservice"
+          }
+        },
+        {
+          "family": "trace",
+          "match": {
+            "operation_contains": "EmptyCart",
+            "error": true
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/cart",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-023-payment-unreachable-plus-delay",
+    "cuj": "checkout",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "paymentUnreachable",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "delay",
+        "path_pattern": "/api/checkout",
+        "delay_ms": 3000
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Compound: payment unreachable + 3s checkout delay",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "paymentservice endpoint is unreachable from checkoutservice + fault-proxy delays /api/checkout by 3000ms",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "paymentservice"
+          }
+        },
+        {
+          "family": "trace",
+          "match": {
+            "operation_contains": "PaymentService",
+            "error": true
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "min_time_ms": 1800
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-024-checkout-truncate-json",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "response_body",
+      "path_pattern": "/api/checkout",
+      "transform": "truncate_json"
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout response truncated to first JSON field \u2014 HTTP 200 but browser JS errors; looks like frontend bug",
+    "taxonomy": {
+      "injection_class": "fault_proxy/response_body",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.6667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy rewrites /api/checkout response body with transform=truncate_json",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout"
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-025-products-truncate-json",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "response_body",
+      "path_pattern": "/api/products",
+      "transform": "truncate_json"
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Products response truncated \u2014 HTTP 200 but only first field returned; blank product listing",
+    "taxonomy": {
+      "injection_class": "fault_proxy/response_body",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.6667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy rewrites /api/products response body with transform=truncate_json",
+      "expected_user_signal": "Product listing or product detail content should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/products"
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-026-image-slow-10s",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/images/products/",
+      "delay_ms": 10000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Product images delayed 10s by fault-proxy \u2014 browser image requests exceed the CUJ visual budget",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /images/products/ by 10000ms",
+      "expected_user_signal": "Product images should not paint within the synthetic user visual-load budget.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/images/products/",
+            "min_time_ms": 6000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-027-checkout-http-401",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/checkout",
+      "status": 401
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout returns 401 Unauthorized \u2014 auth semantics; misleads toward session/token investigation",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 401 for /api/checkout",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "status": 401
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-028-checkout-http-429",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/checkout",
+      "status": 429
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout returns 429 Too Many Requests \u2014 rate-limit semantics; misleads toward capacity investigation",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 429 for /api/checkout",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "status": 429
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-029-checkout-delay-10s",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/api/checkout",
+      "delay_ms": 10000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout delayed 10s \u2014 user waits too long for order completion; HAR timing carries the evidence",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /api/checkout by 10000ms",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-030-products-delay-10s",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/api/products",
+      "delay_ms": 10000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Products load 10s slow - clear HAR timing + Jaeger catalog latency",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /api/products by 10000ms",
+      "expected_user_signal": "Product listing or product detail content should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/products",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-031-cart-delay-10s",
+    "cuj": "checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/api/cart",
+      "delay_ms": 10000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Cart operations 10s slow - HAR timing + Jaeger cart span latency",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /api/cart by 10000ms",
+      "expected_user_signal": "Cart add/read/update behavior should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/cart",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-032-ad-failure-plus-products-truncate",
+    "cuj": "checkout",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "adFailure",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "response_body",
+        "path_pattern": "/api/products",
+        "transform": "truncate_json"
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Decoy: ad error noise floods logs/traces while proxy silently truncates product response \u2014 agent must look past ad errors to find HAR body issue",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "adservice change signal is present while fault-proxy rewrites /api/products response body with transform=truncate_json",
+      "expected_user_signal": "Product listing or product detail content should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "adservice"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/products"
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-033-kafka-plus-checkout-401",
+    "cuj": "checkout",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "kafkaQueueProblems",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "http_error",
+        "path_pattern": "/api/checkout",
+        "status": 401
+      }
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Decoy: Kafka consumer lag errors in logs while proxy blocks checkout with 401 \u2014 agent investigates Kafka before checking HAR",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "Kafka queue throughput is degraded and dependent async paths may stall + fault-proxy returns HTTP 401 for /api/checkout",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "kafka"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "status": 401
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-034-kafka-plus-cart-empty",
+    "cuj": "checkout",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "kafkaQueueProblems",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "response_body",
+        "path_pattern": "/api/cart",
+        "transform": "empty_cart"
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Decoy: Kafka errors visible in traces while cart silently returns empty (HTTP 200) \u2014 agent must find silent proxy transform amid async noise",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "Kafka queue throughput is degraded and dependent async paths may stall + fault-proxy rewrites /api/cart response body with transform=empty_cart",
+      "expected_user_signal": "Cart add/read/update behavior should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "kafka"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/cart"
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-035-ad-failure-plus-recommendations-delay-10s",
+    "cuj": "browse",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "adFailure",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "delay",
+        "path_pattern": "/api/recommendations",
+        "delay_ms": 10000
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Ad service failure plus recommendations delayed 10s \u2014 browse exercises both ad and recommendation calls so both symptoms are visible",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "adservice GetAds returns backend errors + fault-proxy delays /api/recommendations by 10000ms",
+      "expected_user_signal": "Recommendations or ad content should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "adservice"
+          }
+        },
+        {
+          "family": "trace",
+          "match": {
+            "operation_contains": "Ad",
+            "error": true
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/recommendations",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-036-catalog-failure-plus-products-503",
+    "cuj": "checkout",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "productCatalogFailure",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "http_error",
+        "path_pattern": "/api/products",
+        "status": 503
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Same-path ambiguity: productCatalogFailure flag ON but proxy intercepts /api/products first \u2014 no Jaeger span exists despite flag being set; agent must recognize proxy-intercepted vs backend fault",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "productcatalogservice change signal is present while fault-proxy returns HTTP 503 for /api/products",
+      "expected_user_signal": "Product listing or product detail content should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "productcatalogservice"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/products",
+            "status": 503
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-037-payment-100pct-plus-checkout-truncate",
+    "cuj": "checkout",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "paymentFailure",
+        "variant": "100%"
+      },
+      "proxy": {
+        "type": "response_body",
+        "path_pattern": "/api/checkout",
+        "transform": "truncate_json"
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Body masks error: checkout response is truncated (HTTP 200, malformed body) while payment always fails in backend \u2014 truncation hides the payment error payload; Jaeger reveals real cause",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "paymentservice Charge returns payment processing errors according to the active failure percentage + fault-proxy rewrites /api/checkout response body with transform=truncate_json",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "paymentservice"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout"
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-038-cart-failure-plus-checkout-401",
+    "cuj": "checkout",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "cartFailure",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "http_error",
+        "path_pattern": "/api/checkout",
+        "status": 401
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Misleading status: proxy checkout 401 (suggests auth bug) while cart backend errors exist in Jaeger \u2014 401 is a red herring; agent must also investigate cart",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "CartService.EmptyCart returns an error when checkout tries to clear the cart + fault-proxy returns HTTP 401 for /api/checkout",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "cartservice"
+          }
+        },
+        {
+          "family": "trace",
+          "match": {
+            "operation_contains": "EmptyCart",
+            "error": true
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "status": 401
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-039-payment-unreachable-plus-checkout-delay-10s",
+    "cuj": "checkout",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "paymentUnreachable",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "delay",
+        "path_pattern": "/api/checkout",
+        "delay_ms": 10000
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Cross-path: checkout is visibly slow while payment is unreachable in Jaeger - agent must connect checkout degradation to the payment backend error",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "paymentservice endpoint is unreachable from checkoutservice + fault-proxy delays /api/checkout by 10000ms",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "paymentservice"
+          }
+        },
+        {
+          "family": "trace",
+          "match": {
+            "operation_contains": "PaymentService",
+            "error": true
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-040-catalog-failure-plus-checkout-delay-10s",
+    "cuj": "checkout",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "productCatalogFailure",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "delay",
+        "path_pattern": "/api/checkout",
+        "delay_ms": 10000
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Timing trap: checkout is very slow (10s, looks like deadlock) while catalog backend errors exist \u2014 agent attributes failure to checkout latency, missing catalog as root cause",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "productcatalogservice change signal is present while fault-proxy delays /api/checkout by 10000ms",
+      "expected_user_signal": "Checkout submission should fail, return an error status, time out, or complete only after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "productcatalogservice"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/checkout",
+            "min_time_ms": 6000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-041-cart-failure-plus-products-delay-10s",
+    "cuj": "checkout",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "cartFailure",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "delay",
+        "path_pattern": "/api/products",
+        "delay_ms": 10000
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Cross-path: products slow in HAR (10s) + cart backend errors in Jaeger - which is the user's actual blocker?",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "CartService.EmptyCart returns an error when checkout tries to clear the cart + fault-proxy delays /api/products by 10000ms",
+      "expected_user_signal": "Product listing or product detail content should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "cartservice"
+          }
+        },
+        {
+          "family": "trace",
+          "match": {
+            "operation_contains": "EmptyCart",
+            "error": true
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/products",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-043-browse-recommendation-cache-failure",
+    "cuj": "browse",
+    "injection_type": "flagd",
+    "params": {
+      "flag": "recommendationCacheFailure",
+      "variant": "on"
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": false,
+    "description": "Recommendation service cache fails \u2014 recommendations RPC errors visible in Jaeger; product grid still loads",
+    "taxonomy": {
+      "injection_class": "flagd/error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "/api/recommendations fails because recommendationservice cannot use its cache backend",
+      "expected_user_signal": "The browse synthetic user should observe product detail, recommendation, or ad content failure/latency.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "recommendationservice"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/recommendations",
+            "status": 500
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-044-browse-ad-high-cpu",
+    "cuj": "browse",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/api/data",
+      "delay_ms": 6000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Ad API latency degradation \u2014 /api/data takes more than the browse CUJ ad budget",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /api/data, the frontend ad-data API backed by adservice, by 6000ms",
+      "expected_user_signal": "The browse synthetic user should observe product detail, recommendation, or ad content failure/latency.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/data",
+            "min_time_ms": 5000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-045-browse-recommendations-http-503",
+    "cuj": "browse",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/recommendations",
+      "status": 503
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Recommendations API returns 503 \u2014 proxy intercepts before backend; recommendations panel fails (HAR shows 503)",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 503 for /api/recommendations",
+      "expected_user_signal": "Recommendations should fail to render or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/recommendations",
+            "status": 503
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-046-browse-products-delay-10s",
+    "cuj": "browse",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/api/products",
+      "delay_ms": 10000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Products load very slowly (10s) - obvious HAR timing + productcatalog span latency in Jaeger",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /api/products by 10000ms",
+      "expected_user_signal": "Product listing or product detail content should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/products",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-047-browse-catalog-failure-plus-recommendation-delay",
+    "cuj": "browse",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "productCatalogFailure",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "delay",
+        "path_pattern": "/api/recommendations",
+        "delay_ms": 10000
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Compound: catalog backend errors in Jaeger + recommendations obviously slow in HAR (10s) - two separate service failures during same browse session",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "productcatalogservice change signal is present while fault-proxy delays /api/recommendations by 10000ms",
+      "expected_user_signal": "Recommendations should fail to render or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "productcatalogservice"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/recommendations",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-049-reviews-llm-rate-limit",
+    "cuj": "reviews",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/product-ask-ai-assistant",
+      "status": 429
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "AI assistant API returns 429 rate limit \u2014 proxy intercepts; AI Response text never renders; HAR shows 429 on /api/product-ask-ai-assistant",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 1,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4,
+      "difficulty": "Easy"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 429 for /api/product-ask-ai-assistant",
+      "expected_user_signal": "The reviews synthetic user should observe AI assistant failure or missing AI response.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/product-ask-ai-assistant",
+            "status": 429
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-050-reviews-product-reviews-http-503",
+    "cuj": "reviews",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/product-reviews",
+      "status": 503
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Product reviews API returns 503 \u2014 proxy intercepts; reviews section fails (HAR shows 503); no backend error span",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 503 for /api/product-reviews",
+      "expected_user_signal": "Product reviews should fail to render or return malformed review content.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/product-reviews",
+            "status": 503
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-051-reviews-ai-assistant-delay-5s",
+    "cuj": "reviews",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/api/product-ask-ai-assistant",
+      "delay_ms": 5000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "AI assistant response delayed 5s \u2014 obvious HAR timing on /api/product-ask-ai-assistant + Jaeger LLM span latency",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /api/product-ask-ai-assistant by 5000ms",
+      "expected_user_signal": "The AI assistant response should fail, time out, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/product-ask-ai-assistant",
+            "min_time_ms": 3000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-054-cart-only-http-500",
+    "cuj": "cart",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/cart",
+      "status": 500
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Cart API returns 500 \u2014 proxy intercepts; add-to-cart fails (HAR shows 500); no cart span in Jaeger (compare with SCEN-056 which has backend trace)",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 500 for /api/cart",
+      "expected_user_signal": "Cart add/read/update behavior should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/cart",
+            "status": 500
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-055-cart-only-delay-10s",
+    "cuj": "cart",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/api/cart",
+      "delay_ms": 10000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Cart operations 10s slow - HAR shows timing; Jaeger shows cart span latency (isolates Redis latency)",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /api/cart by 10000ms",
+      "expected_user_signal": "Cart add/read/update behavior should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/cart",
+            "min_time_ms": 8000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-057-currency-http-503",
+    "cuj": "currency",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/currency",
+      "status": 503
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Currency API returns 503 \u2014 proxy intercepts; all prices become $0.00 or NaN (distinctive fan-out browser evidence); HAR shows 503",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 503 for /api/currency",
+      "expected_user_signal": "Currency conversion should fail or prices should not update reliably.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/currency",
+            "status": 503
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-058-currency-delay-5s",
+    "cuj": "currency",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/api/currency",
+      "delay_ms": 5000
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Currency switching 5s slow \u2014 HAR shows /api/currency timing; Jaeger shows currency service span latency",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault-proxy delays /api/currency by 5000ms",
+      "expected_user_signal": "Currency conversion should fail or prices should not update reliably.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/currency",
+            "min_time_ms": 3000
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-059-currency-503-plus-catalog-failure",
+    "cuj": "currency",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "productCatalogFailure",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "http_error",
+        "path_pattern": "/api/currency",
+        "status": 503
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Misleading: catalog errors prominent in Jaeger while proxy silently breaks currency \u2014 agent investigates catalog errors but real user-visible fault is all prices broken",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "productcatalogservice change signal is present while fault-proxy returns HTTP 503 for /api/currency",
+      "expected_user_signal": "Currency conversion should fail or prices should not update reliably.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "productcatalogservice"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/currency",
+            "status": 503
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-060-currency-503-plus-ad-high-cpu",
+    "cuj": "currency",
+    "injection_type": "compound",
+    "params": {
+      "flagd": {
+        "flag": "adHighCpu",
+        "variant": "on"
+      },
+      "proxy": {
+        "type": "http_error",
+        "path_pattern": "/api/currency",
+        "status": 503
+      }
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend",
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Decoy: ad CPU spike creates prominent backend noise while currency API is silently broken by proxy \u2014 agent must look past CPU metrics to find the price display fault",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "adservice change signal is present while fault-proxy returns HTTP 503 for /api/currency",
+      "expected_user_signal": "Currency conversion should fail or prices should not update reliably.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "adservice"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/currency",
+            "status": 503
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-061-browse-dual-flagd-recommendation-cache-plus-ad-gc",
+    "cuj": "browse",
+    "injection_type": "compound",
+    "params": {
+      "flagd": [
+        {
+          "flag": "recommendationCacheFailure",
+          "variant": "on"
+        },
+        {
+          "flag": "adManualGc",
+          "variant": "on"
+        }
+      ]
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": false,
+    "description": "Dual-flagd browse compound: recommendation cache fails + ad service triggers manual GC \u2014 two simultaneous backend faults; agent must attribute both independently",
+    "taxonomy": {
+      "injection_class": "compound",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 3,
+      "root_cause_type": 3,
+      "composite": 0.8667,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "compound_failure",
+      "expected_source": "/api/recommendations fails because recommendationservice cannot use its cache backend + adservice garbage collection pauses degrade ad and recommendation-dependent rendering",
+      "expected_user_signal": "The browse synthetic user should observe product detail, recommendation, or ad content failure/latency.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "recommendationservice"
+          }
+        },
+        {
+          "family": "change",
+          "match": {
+            "service": "adservice"
+          }
+        },
+        {
+          "family": "trace",
+          "match": {
+            "operation_contains": "Ad",
+            "error": false
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-062-reviews-ai-assistant-http-503",
+    "cuj": "reviews",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/api/product-ask-ai-assistant",
+      "status": 503
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "AI assistant API returns 503 \u2014 proxy intercepts; \u201cAI Response:\u201d text never renders; HAR shows 503 on /api/product-ask-ai-assistant; reviews section itself loads normally",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 2,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy returns HTTP 503 for /api/product-ask-ai-assistant",
+      "expected_user_signal": "The AI assistant response should fail, time out, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/product-ask-ai-assistant",
+            "status": 503
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-063-reviews-product-reviews-truncate",
+    "cuj": "reviews",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "response_body",
+      "path_pattern": "/api/product-reviews",
+      "transform": "truncate_json"
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Product reviews response truncated (HTTP 200, malformed JSON) \u2014 frontend parse fails, shows error state; \u201c\\d+ reviews\u201d text never renders; looks like frontend bug not a service outage",
+    "taxonomy": {
+      "injection_class": "fault_proxy/response_body",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.6667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy rewrites /api/product-reviews response body with transform=truncate_json",
+      "expected_user_signal": "Product reviews should fail to render or return malformed review content.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/product-reviews"
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-064-cart-only-cart-empty",
+    "cuj": "cart",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "response_body",
+      "path_pattern": "/api/cart",
+      "transform": "empty_cart"
+    },
+    "modality_requirement": 2,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Cart silently returns empty items (HTTP 200) on cart CUJ \u2014 proxy transforms response body; cart page shows no items after add; HAR shows 200 with items=[]; no backend error to find",
+    "taxonomy": {
+      "injection_class": "fault_proxy/response_body",
+      "modality_requirement": 2,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.6667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault-proxy rewrites /api/cart response body with transform=empty_cart",
+      "expected_user_signal": "Cart add/read/update behavior should fail, render incorrectly, or load after visible degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/api/cart"
+          }
+        }
+      ]
+    },
+    "app": "otel-demo"
+  },
+  {
+    "scenario_id": "SCEN-100-ts-baseline",
+    "app": "tractor-store",
+    "cuj": "ts-checkout",
+    "injection_type": "none",
+    "params": {},
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Healthy Tractor Store baseline \u2014 no fault injected",
+    "taxonomy": {
+      "injection_class": "none",
+      "modality_requirement": 1,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 1,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.3333,
+      "difficulty": "Easy"
+    },
+    "expected_cuj_outcome": {
+      "status": "pass",
+      "failure_mode": null,
+      "expected_source": "healthy no-fault Tractor Store checkout CUJ",
+      "expected_user_signal": "The checkout synthetic user should add a product, submit checkout, and reach the confirmation page without retry, failure, or degradation.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": true
+          }
+        },
+        {
+          "family": "screenshot"
+        },
+        {
+          "family": "har"
+        }
+      ]
+    },
+    "allow_active_baseline": true
+  },
+  {
+    "scenario_id": "SCEN-101-ts-decide-bundle-blocked",
+    "app": "tractor-store",
+    "cuj": "ts-product",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "asset_block",
+      "path_pattern": "/decide/static/",
+      "status": 404
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Decide team JS bundle blocked 404 \u2014 product detail page blank or fallback rendered",
+    "taxonomy": {
+      "injection_class": "fault_proxy/asset_block",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy returns HTTP 404 for /decide/static/ product-detail JavaScript and CSS assets",
+      "expected_user_signal": "The product-detail CUJ records app-health failures for missing Decide static assets while loading the product page.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/decide/static/",
+            "status": 404
+          }
+        },
+        {
+          "family": "console"
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-102-ts-checkout-bundle-blocked",
+    "app": "tractor-store",
+    "cuj": "ts-checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "asset_block",
+      "path_pattern": "/checkout/static/",
+      "status": 503
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout JS bundle 503 \u2014 checkout form fails to load",
+    "taxonomy": {
+      "injection_class": "fault_proxy/asset_block",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy returns HTTP 503 for /checkout/static/ checkout JavaScript and CSS assets",
+      "expected_user_signal": "The checkout CUJ cannot render the cart line item after add-to-cart; the synthetic user fails while waiting for cart contents.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/checkout/static/",
+            "status": 503
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-103-ts-explore-css-blocked",
+    "app": "tractor-store",
+    "cuj": "ts-browse",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "asset_block",
+      "path_pattern": "/explore/static/",
+      "status": 404
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Explore CSS blocked \u2014 homepage renders with broken layout",
+    "taxonomy": {
+      "injection_class": "fault_proxy/asset_block",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy returns HTTP 404 for /explore/static/ browse JavaScript and CSS assets",
+      "expected_user_signal": "The browse CUJ records app-health failures for missing Explore static assets during category browsing.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/explore/static/",
+            "status": 404
+          }
+        },
+        {
+          "family": "console"
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-104-ts-checkout-css-blocked",
+    "app": "tractor-store",
+    "cuj": "ts-checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "asset_block",
+      "path_pattern": "/checkout/static/client.css",
+      "status": 404
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": false,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout CSS asset blocked \u2014 checkout flow renders with missing checkout styles",
+    "taxonomy": {
+      "injection_class": "fault_proxy/asset_block",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4667,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault path corrected from /checkout/static/main.css to the observed /checkout/static/client.css asset; fault proxy returns HTTP 404 for that checkout stylesheet",
+      "expected_user_signal": "The checkout CUJ records repeated app-health failures for the missing checkout stylesheet while the flow cannot render cart contents reliably.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/checkout/static/client.css",
+            "status": 404
+          }
+        },
+        {
+          "family": "console"
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-105-ts-decide-js-bad-mime",
+    "app": "tractor-store",
+    "cuj": "ts-product",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "header_mutation",
+      "path_pattern": "/decide/static/",
+      "set": {
+        "Content-Type": "text/plain"
+      }
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Decide JS served with text/plain MIME type \u2014 browser refuses to execute script",
+    "taxonomy": {
+      "injection_class": "fault_proxy/header_mutation",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy serves /decide/static/ assets with Content-Type: text/plain",
+      "expected_user_signal": "The product-detail CUJ records browser console errors because the Decide JavaScript module is refused under strict MIME-type checking.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false,
+            "error_contains": "MIME type"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/decide/static/client.js",
+            "response_header": {
+              "name": "Content-Type",
+              "contains": "text/plain"
+            }
+          }
+        },
+        {
+          "family": "console"
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-106-ts-cdn-third-party-blocked",
+    "app": "tractor-store",
+    "cuj": "ts-browse",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/explore/api/category",
+      "status": 503
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Explore category API returns 503 \u2014 browse category navigation cannot load product cards",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 1,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4,
+      "difficulty": "Easy"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault retargeted from unused /explore/api/recommendations path to the observed /explore/api/category browse path; fault proxy returns HTTP 503 for that category request",
+      "expected_user_signal": "The browse CUJ cannot render product cards after category navigation because the Explore category API returns HTTP 503.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/explore/api/category",
+            "status": 503
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-107-ts-explore-schema-drift",
+    "app": "tractor-store",
+    "cuj": "ts-browse",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "json_shape_mutation",
+      "path_pattern": "/explore/api/category",
+      "mutations": [
+        {
+          "op": "rename",
+          "from": "products",
+          "to": "items"
+        }
+      ]
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Explore category API schema drift \u2014 products renamed away so category product cards cannot render",
+    "taxonomy": {
+      "injection_class": "fault_proxy/json_shape_mutation",
+      "modality_requirement": 1,
+      "root_cause_visibility": 1,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 3,
+      "composite": 0.7333,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy mutates the Explore category API response shape by renaming the products collection away from the field expected by the client",
+      "expected_user_signal": "The browse CUJ cannot render any product card after opening the category view.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false,
+            "error_contains": "product/"
+          }
+        },
+      {
+        "family": "har",
+        "match": {
+          "url_contains": "/explore/api/category",
+          "method": "GET",
+          "status": 200
+        }
+      },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-108-ts-minicart-schema-drift",
+    "app": "tractor-store",
+    "cuj": "ts-cart",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "json_shape_mutation",
+      "path_pattern": "/checkout/api/minicart",
+      "mutations": [
+        {
+          "op": "rename",
+          "from": "quantity",
+          "to": "count"
+        }
+      ]
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Minicart API schema drift \u2014 quantity renamed away so visible minicart count does not update",
+    "taxonomy": {
+      "injection_class": "fault_proxy/json_shape_mutation",
+      "modality_requirement": 1,
+      "root_cause_visibility": 1,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 3,
+      "composite": 0.7333,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy renames the checkout minicart API quantity field to count, so the checkout client receives a response without the quantity it renders",
+      "expected_user_signal": "The cart CUJ adds an item but the visible minicart quantity remains empty instead of updating to 1.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false,
+            "error_contains": "toHaveText"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/checkout/api/minicart",
+            "method": "GET",
+            "status": 200
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-109-ts-explore-json-invalid",
+    "app": "tractor-store",
+    "cuj": "ts-browse",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "response_body",
+      "path_pattern": "/explore/api/category",
+      "transform": "invalid_json"
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Explore category API returns invalid JSON \u2014 browse category cards cannot render",
+    "taxonomy": {
+      "injection_class": "fault_proxy/response_body",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.6,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy returns invalid JSON from the Explore category API endpoint",
+      "expected_user_signal": "The browse CUJ cannot render category product cards after opening the Classic Machines category.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false,
+            "error_contains": "product/"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/explore/api/category",
+            "method": "GET",
+            "status": 200
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-110-ts-checkout-json-truncated",
+    "app": "tractor-store",
+    "cuj": "ts-checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "response_body",
+      "path_pattern": "/checkout/api/cart/item",
+      "transform": "invalid_json"
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout cart-item API returns invalid JSON \u2014 add-to-cart cannot complete",
+    "taxonomy": {
+      "injection_class": "fault_proxy/response_body",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.6,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy returns invalid JSON from the checkout add-to-cart API endpoint",
+      "expected_user_signal": "The checkout CUJ times out before it can complete the add-to-cart and cart rendering steps.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/checkout/api/cart/item",
+            "method": "POST",
+            "status": 415
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-111-ts-minicart-empty-response",
+    "app": "tractor-store",
+    "cuj": "ts-cart",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "response_body",
+      "path_pattern": "/checkout/api/minicart",
+      "transform": "empty_cart"
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Minicart API returns empty quantity \u2014 visible minicart count stays empty after add-to-cart",
+    "taxonomy": {
+      "injection_class": "fault_proxy/response_body",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.6,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy rewrites the checkout minicart API response to an empty cart payload",
+      "expected_user_signal": "The cart CUJ adds an item but the visible minicart quantity remains empty instead of updating to 1.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false,
+            "error_contains": "toHaveText"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/checkout/api/minicart",
+            "method": "GET",
+            "status": 200
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-112-ts-explore-fragment-500",
+    "app": "tractor-store",
+    "cuj": "ts-browse",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/explore/api/category",
+      "status": 500
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Explore category API returns 500 \u2014 browse category navigation cannot load product cards",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 1,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4,
+      "difficulty": "Easy"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy returns HTTP 500 from the Explore category API endpoint",
+      "expected_user_signal": "The browse CUJ cannot render category product cards after opening the Classic Machines category.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false,
+            "error_contains": "product/"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/explore/api/category",
+            "method": "GET",
+            "status": 500
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-113-ts-checkout-fragment-500",
+    "app": "tractor-store",
+    "cuj": "ts-checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/checkout/api/cart/item",
+      "status": 500
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout cart-item API returns 500 \u2014 checkout flow cannot add the item to cart",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 1,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4,
+      "difficulty": "Easy"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy returns HTTP 500 from the checkout add-to-cart API endpoint",
+      "expected_user_signal": "The checkout CUJ cannot add the selected item to the cart and eventually times out waiting for the cart line item.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/checkout/api/cart/item",
+            "method": "POST",
+            "status": 500
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-114-ts-minicart-delay",
+    "app": "tractor-store",
+    "cuj": "ts-cart",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/checkout/api/minicart",
+      "delay_ms": 3500
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Minicart API delayed 3.5s \u2014 minicart update exceeds the cart CUJ performance budget",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault proxy delays the checkout minicart API response past the cart CUJ's 3s request budget",
+      "expected_user_signal": "The cart CUJ completes the user-visible cart flow but fails its app-health assertion because minicart requests exceed the performance budget.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false,
+            "error_contains": "performance-budget"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/checkout/api/minicart",
+            "method": "GET",
+            "status": 200,
+            "min_time_ms": 3000
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-115-ts-explore-fragment-delay",
+    "app": "tractor-store",
+    "cuj": "ts-browse",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "delay",
+      "path_pattern": "/explore/api/",
+      "delay_ms": 3500
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Explore category API delayed 3.5s \u2014 category products exceed the browse CUJ performance budget",
+    "taxonomy": {
+      "injection_class": "fault_proxy/delay",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "performance_degradation",
+      "expected_source": "fault proxy delays the Explore category API response past the browse CUJ's 3s request budget",
+      "expected_user_signal": "The browse CUJ renders eventually but fails its app-health assertion because the category request exceeds the performance budget.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false,
+            "error_contains": "performance-budget"
+          }
+        },
+      {
+        "family": "har",
+        "match": {
+          "url_contains": "/explore/api/category",
+          "method": "GET",
+          "status": 200,
+          "min_time_ms": 3000
+        }
+      },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-116-ts-fragment-wrong-version",
+    "app": "tractor-store",
+    "cuj": "ts-checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "url_rewrite",
+      "from_prefix": "/checkout/static/client.",
+      "to_prefix": "/checkout/static/client.v0."
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser",
+      "backend"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout JS bundle rewritten to non-existent version path \u2014 checkout module fails to load",
+    "taxonomy": {
+      "injection_class": "fault_proxy/url_rewrite",
+      "modality_requirement": 1,
+      "root_cause_visibility": 1,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 3,
+      "composite": 0.7333,
+      "difficulty": "Hard"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy rewrites checkout static asset URLs to a missing version, producing HTTP 404 responses for checkout assets",
+      "expected_user_signal": "The checkout CUJ cannot render the cart line item after add-to-cart; the synthetic user fails while waiting for cart contents.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/checkout/static/client",
+            "status": 404
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-117-ts-checkout-js-bad-mime",
+    "app": "tractor-store",
+    "cuj": "ts-checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "header_mutation",
+      "path_pattern": "/checkout/static/client.js",
+      "set": {
+        "Content-Type": "text/plain"
+      }
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout JS served with text/plain MIME type \u2014 browser refuses to execute checkout script",
+    "taxonomy": {
+      "injection_class": "fault_proxy/header_mutation",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy serves the checkout JavaScript bundle with a text/plain Content-Type header",
+      "expected_user_signal": "The browser refuses to execute the checkout module script, leaving checkout UI behavior incomplete during the checkout CUJ.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/checkout/static/client.js",
+            "method": "GET",
+            "status": 200,
+            "response_header": {
+              "name": "Content-Type",
+              "value": "text/plain"
+            }
+          }
+        },
+        {
+          "family": "console",
+          "match": {
+            "text_contains": "MIME type of \"text/plain\""
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-118-ts-minicart-500",
+    "app": "tractor-store",
+    "cuj": "ts-cart",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "http_error",
+      "path_pattern": "/checkout/api/minicart",
+      "status": 500
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Minicart API returns 500 \u2014 visible minicart quantity cannot update after add-to-cart",
+    "taxonomy": {
+      "injection_class": "fault_proxy/http_error",
+      "modality_requirement": 1,
+      "root_cause_visibility": 3,
+      "diagnostic_depth": 2,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.4,
+      "difficulty": "Easy"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy returns HTTP 500 from the checkout minicart API endpoint",
+      "expected_user_signal": "The cart CUJ adds an item but the visible minicart quantity remains empty instead of updating to 1.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false,
+            "error_contains": "toHaveText"
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/checkout/api/minicart",
+            "method": "GET",
+            "status": 500
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-119-ts-csp-script-blocked",
+    "app": "tractor-store",
+    "cuj": "ts-checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "header_mutation",
+      "path_pattern": "/",
+      "set": {
+        "Content-Security-Policy": "script-src 'none'"
+      }
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Restrictive CSP injected \u2014 all inline and external scripts blocked",
+    "taxonomy": {
+      "injection_class": "fault_proxy/header_mutation",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 1,
+      "composite": 0.5333,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy injects Content-Security-Policy: script-src 'none' on HTML responses, blocking frontend scripts",
+      "expected_user_signal": "The checkout CUJ cannot render the cart line item after add-to-cart because required frontend scripts are blocked by CSP.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "http://localhost:3090/",
+            "response_header": {
+              "name": "Content-Security-Policy",
+              "contains": "script-src 'none'"
+            }
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/checkout/static/client.js",
+            "status": -1
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-120-ts-checkout-body-partial",
+    "app": "tractor-store",
+    "cuj": "ts-checkout",
+    "injection_type": "fault_proxy",
+    "params": {
+      "type": "response_body",
+      "path_pattern": "/checkout/",
+      "transform": "raw_truncate",
+      "keep_bytes": 256
+    },
+    "modality_requirement": 1,
+    "primary_evidence": [
+      "browser"
+    ],
+    "backend_tools_diagnostic": true,
+    "browser_tools_diagnostic": true,
+    "description": "Checkout HTML page body truncated at 256 bytes \u2014 page renders partially broken",
+    "taxonomy": {
+      "injection_class": "fault_proxy/response_body",
+      "modality_requirement": 1,
+      "root_cause_visibility": 2,
+      "diagnostic_depth": 3,
+      "temporal_complexity": 1,
+      "root_cause_type": 2,
+      "composite": 0.6,
+      "difficulty": "Medium"
+    },
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "fault proxy truncates /checkout/ responses, corrupting checkout route/API handling during the cart flow",
+      "expected_user_signal": "The checkout CUJ cannot add the item to the cart; the cart-item request returns HTTP 415 and cart contents never appear.",
+      "required_evidence": [
+        {
+          "family": "cuj_report",
+          "match": {
+            "passed_cleanly": false
+          }
+        },
+        {
+          "family": "har",
+          "match": {
+            "url_contains": "/checkout/api/cart/item",
+            "status": 415
+          }
+        },
+        {
+          "family": "screenshot"
+        }
+      ]
+    }
+  },
+  {
+    "scenario_id": "SCEN-121-ts-cart-event-wrong-name",
+    "app": "tractor-store",
+    "cuj": "ts-cart",
+    "mutation_patch": "infra/tractor-store/mutations/ts-cart-event-wrong-name",
+    "params": {
+      "file": "AddToCartCe.jsx (compiled checkout/static/client.js)",
+      "change": "CustomEvent dispatch name: checkout:cart-updated \u2192 checkout:cart_updated (hyphen\u2192underscore)"
+    },
+    "description": "AddToCartCe dispatches checkout:cart_updated (underscore). MiniCartCe listens for checkout:cart-updated (hyphen). Minicart count does not update after add-to-cart.",
+    "primary_evidence": [
+      "get_frontend_spans",
+      "get_browser_console",
+      "get_network_requests"
+    ],
+    "browser_tools_diagnostic": [
+      "get_frontend_spans",
+      "get_browser_console",
+      "get_network_requests",
+      "view_screenshot"
+    ],
+    "backend_tools_diagnostic": [],
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "AddToCartCe dispatches checkout:cart_updated (underscore) instead of checkout:cart-updated (hyphen); MiniCartCe listener never receives the event",
+      "expected_user_signal": "Add-to-cart POST succeeds server-side but the minicart count does not update; cross-team event contract between checkout and minicart is broken",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "console"
+        }
+      ]
+    },
+    "modality_requirement": 1,
+    "injection_type": "mutation",
+    "taxonomy": {
+      "difficulty": "medium"
+    }
+  },
+  {
+    "scenario_id": "SCEN-122-ts-cart-event-listener-missing",
+    "app": "tractor-store",
+    "cuj": "ts-cart",
+    "mutation_patch": "infra/tractor-store/mutations/ts-cart-event-listener-missing",
+    "params": {
+      "file": "MiniCartCe.jsx (compiled checkout/static/client.js)",
+      "change": "addEventListener event name: checkout:cart-updated \u2192 checkout:cart-updated-disabled"
+    },
+    "description": "MiniCartCe registers its listener for checkout:cart-updated-disabled. The correct checkout:cart-updated event is dispatched but never received. Minicart count stays stale.",
+    "primary_evidence": [
+      "get_frontend_spans",
+      "get_browser_console",
+      "get_network_requests"
+    ],
+    "browser_tools_diagnostic": [
+      "get_frontend_spans",
+      "get_browser_console",
+      "get_network_requests",
+      "view_screenshot"
+    ],
+    "backend_tools_diagnostic": [],
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "MiniCartCe registers addEventListener for checkout:cart-updated-disabled instead of checkout:cart-updated; dispatched event is never received by the minicart listener",
+      "expected_user_signal": "Add-to-cart completes server-side but minicart count never updates; no visible confirmation that the item was added to cart",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "console"
+        }
+      ]
+    },
+    "modality_requirement": 1,
+    "injection_type": "mutation",
+    "taxonomy": {
+      "difficulty": "hard"
+    }
+  },
+  {
+    "scenario_id": "SCEN-123-ts-cart-delete-no-event",
+    "app": "tractor-store",
+    "cuj": "ts-cart",
+    "mutation_patch": "infra/tractor-store/mutations/ts-cart-delete-no-event",
+    "params": {
+      "file": "App.jsx (compiled checkout/static/client.js)",
+      "change": "CustomEvent dispatch removed from handleDelete (cart item deletion flow)"
+    },
+    "description": "App.jsx handleDelete does not dispatch checkout:cart-updated after DELETE. Cart item is removed server-side but minicart count does not decrease until page refresh.",
+    "primary_evidence": [
+      "get_frontend_spans",
+      "get_browser_console",
+      "get_network_requests"
+    ],
+    "browser_tools_diagnostic": [
+      "get_frontend_spans",
+      "get_browser_console",
+      "get_network_requests",
+      "view_screenshot"
+    ],
+    "backend_tools_diagnostic": [],
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "handleDelete in App.jsx does not dispatch checkout:cart-updated after DELETE request; minicart count is stale after item removal",
+      "expected_user_signal": "Cart item is removed server-side but minicart count stays stale until page refresh; cart state appears inconsistent",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har"
+        }
+      ]
+    },
+    "modality_requirement": 1,
+    "injection_type": "mutation",
+    "taxonomy": {
+      "difficulty": "medium"
+    }
+  },
+  {
+    "scenario_id": "SCEN-124-ts-checkout-store-event-wrong-name",
+    "app": "tractor-store",
+    "cuj": "ts-checkout",
+    "mutation_patch": "infra/tractor-store/mutations/ts-checkout-store-event-wrong-name",
+    "params": {
+      "file": "StorePicker.jsx (compiled explore/static/client.js)",
+      "change": "CustomEvent dispatch name: explore:store-selected \u2192 explore:store_selected (hyphen\u2192underscore)"
+    },
+    "description": "StorePicker dispatches explore:store_selected. CheckoutPage listens for explore:store-selected. Store selection does nothing; submit button remains disabled; checkout cannot be completed.",
+    "primary_evidence": [
+      "get_frontend_spans",
+      "get_browser_console",
+      "view_screenshot"
+    ],
+    "browser_tools_diagnostic": [
+      "get_frontend_spans",
+      "get_browser_console",
+      "get_network_requests",
+      "view_screenshot"
+    ],
+    "backend_tools_diagnostic": [],
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "StorePicker dispatches explore:store_selected (underscore) instead of explore:store-selected (hyphen); CheckoutPage never receives the store selection event",
+      "expected_user_signal": "Store picker selection has no effect; submit button remains disabled and checkout cannot be completed",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "console"
+        }
+      ]
+    },
+    "modality_requirement": 1,
+    "injection_type": "mutation",
+    "taxonomy": {
+      "difficulty": "hard"
+    }
+  },
+  {
+    "scenario_id": "SCEN-125-ts-checkout-store-listener-missing",
+    "app": "tractor-store",
+    "cuj": "ts-checkout",
+    "mutation_patch": "infra/tractor-store/mutations/ts-checkout-store-listener-missing",
+    "params": {
+      "file": "CheckoutPage.jsx (compiled checkout/static/client.js)",
+      "change": "addEventListener event name: explore:store-selected \u2192 explore:store-selected-disabled"
+    },
+    "description": "CheckoutPage registers its listener for explore:store-selected-disabled. StorePicker dispatches the correct explore:store-selected but CheckoutPage never receives it. Submit button stays disabled.",
+    "primary_evidence": [
+      "get_frontend_spans",
+      "get_browser_console",
+      "view_screenshot"
+    ],
+    "browser_tools_diagnostic": [
+      "get_frontend_spans",
+      "get_browser_console",
+      "get_network_requests",
+      "view_screenshot"
+    ],
+    "backend_tools_diagnostic": [],
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "CheckoutPage registers addEventListener for explore:store-selected-disabled instead of explore:store-selected; store selection events dispatched by StorePicker never reach the checkout page",
+      "expected_user_signal": "Store picker appears functional but checkout submit button stays disabled; checkout cannot be completed regardless of store selection",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "console"
+        }
+      ]
+    },
+    "modality_requirement": 1,
+    "injection_type": "mutation",
+    "taxonomy": {
+      "difficulty": "hard"
+    }
+  },
+  {
+    "scenario_id": "SCEN-126-ts-cart-cookie-sep-mutation",
+    "app": "tractor-store",
+    "cuj": "ts-cart",
+    "mutation_patch": "infra/tractor-store/mutations/ts-cart-cookie-sep-mutation",
+    "params": {
+      "file": "service.js (compiled checkout/dist/server.node.js)",
+      "change": "ITEM_SEP write path: .join(\"|\") \u2192 .join(\",\") \u2014 cart items written with comma separator but read with pipe"
+    },
+    "description": "Cart items are written to the c_cart cookie with comma separators but the read path splits on pipe. On page reload the cookie is unparseable and the cart appears empty.",
+    "primary_evidence": [
+      "get_browser_storage",
+      "get_network_requests"
+    ],
+    "browser_tools_diagnostic": [
+      "get_browser_storage",
+      "get_network_requests",
+      "view_screenshot"
+    ],
+    "backend_tools_diagnostic": [
+      "search_logs"
+    ],
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "Cart items written to c_cart cookie with comma separator (.join(',')) but getCookie parses on pipe separator; cookie becomes unreadable after first write",
+      "expected_user_signal": "Cart appears empty after page reload; items added in session are lost on navigation to cart page",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har"
+        }
+      ]
+    },
+    "modality_requirement": 2,
+    "injection_type": "mutation",
+    "taxonomy": {
+      "difficulty": "medium"
+    }
+  },
+  {
+    "scenario_id": "SCEN-127-ts-cart-cookie-key-mutation",
+    "app": "tractor-store",
+    "cuj": "ts-cart",
+    "mutation_patch": "infra/tractor-store/mutations/ts-cart-cookie-key-mutation",
+    "params": {
+      "file": "service.js (compiled checkout/dist/server.node.js)",
+      "change": "COOKIE key in setCookie: c_cart \u2192 c_cart_v2 (getCookie still reads c_cart)"
+    },
+    "description": "Cart items are written under the cookie key c_cart_v2 but read from c_cart. Every page load returns an empty cart regardless of what was added.",
+    "primary_evidence": [
+      "get_browser_storage",
+      "get_network_requests"
+    ],
+    "browser_tools_diagnostic": [
+      "get_browser_storage",
+      "get_network_requests",
+      "view_screenshot"
+    ],
+    "backend_tools_diagnostic": [
+      "search_logs"
+    ],
+    "expected_cuj_outcome": {
+      "status": "fail",
+      "failure_mode": "functional_failure",
+      "expected_source": "setCookie writes cart data under key c_cart_v2 but getCookie always reads from c_cart; cart data is written but never read back",
+      "expected_user_signal": "Cart is always empty on every page load; items can be added but disappear immediately on navigation",
+      "required_evidence": [
+        {
+          "family": "cuj_report"
+        },
+        {
+          "family": "har"
+        }
+      ]
+    },
+    "modality_requirement": 2,
+    "injection_type": "mutation",
+    "taxonomy": {
+      "difficulty": "hard"
+    }
+  }
+]

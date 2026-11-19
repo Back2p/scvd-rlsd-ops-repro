@@ -1,0 +1,6 @@
+{
+  "files": 28,
+  "functions": 124,
+  "findings": [],
+  "scope": "Active code only; this AST audit complements, and cannot replace, behavior tests and platform GPU qualification"
+}

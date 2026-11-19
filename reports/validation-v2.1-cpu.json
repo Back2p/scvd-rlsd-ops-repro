@@ -1,0 +1,32 @@
+{
+  "date": "2026-11-17",
+  "version": "2.1.0",
+  "success": true,
+  "tests_run": 61,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "static_code_files": 28,
+  "static_code_functions": 124,
+  "stub_findings": 0,
+  "entrypoint_checks": 24,
+  "optimizer_step_calls": 0,
+  "real_9b_or_27b_weight_loads": 0,
+  "real_teacher_requests": 0,
+  "real_benchmark_model_attempts": 0,
+  "training_started": false,
+  "cpu_gloo_two_process_control": "passed: per-rank padded shard distribution, coordinator error propagation, no CUDA init",
+  "guards": "CPU gate forbids AdamW.step, urllib requests and CUDA lazy initialization; local Gloo sockets only",
+  "test_scope": "synthetic tensors, randomly initialized one-layer tiny HF checkpoints, real local tokenizer metadata, actual case manifests",
+  "python": "3.12.13",
+  "not_verified": [
+    "Linux Docker build",
+    "real Qwen3.5 hybrid CUDA kernels",
+    "8/16 GPU FSDP training",
+    "32K memory including Adam and frozen teacher",
+    "real sampler reload/logprob drift",
+    "complete target-platform telemetry",
+    "GPU optimizer/RNG resume",
+    "method performance"
+  ]
+}

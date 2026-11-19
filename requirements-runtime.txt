@@ -1,0 +1,10 @@
+# Validated for CPU API/math checks, NOT a claim of GPU integration validation.
+torch==2.8.0
+transformers==5.2.0
+PyYAML==6.0.3
+gdown==5.2.0
+safetensors==0.8.0
+tokenizers==0.22.2
+numpy==2.2.6
+jinja2==3.1.6
+huggingface_hub==1.33.0

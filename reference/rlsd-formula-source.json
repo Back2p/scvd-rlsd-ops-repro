@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/iie-ycx/RLSD",
+  "revision": "aca313b978de4fb3a509ddf1831bf61fe597a2eb",
+  "source_path": "verl/workers/actor/dp_opsd_actor.py",
+  "original_file_sha256": "7b2f409244890e887bebde663b27fed8e1a60c44fe9bda20fd74782a0c4deccb",
+  "scope": "Only exact method excerpt kept; standalone four-domain implementation is ops_repro. Original upstream not bundled or automatically executed.",
+  "excerpt_note": "Indentation normalized from class method to standalone function; formula body unchanged.",
+  "original_method_excerpt_sha256": "7f93048db4f9ef2bf645e48b0e50e6b2859f6cdb6705e5ed8dd4c1c318435947",
+  "standalone_fixture_sha256": "d1f677ec9ad8cefd47ec8fd4982f135db7a6b195c3fa3a878384b78a9d94da92"
+}

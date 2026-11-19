@@ -1,0 +1,103 @@
+{
+  "field": "root_cause.type",
+  "scope": "global",
+  "version": 1,
+  "semantics": "Use a small closed fault-family enum. Choose the single best family for the primary root cause. Put mechanism details in root_cause.description.",
+  "values": [
+    {
+      "name": "none",
+      "description": "No fault observed; healthy baseline or no diagnosable injected issue.",
+      "maps_from": [
+        "no_fault_observed"
+      ]
+    },
+    {
+      "name": "availability",
+      "description": "The component is unavailable or returns an unsuccessful response that prevents the operation from completing.",
+      "maps_from": [
+        "cache_failure",
+        "category_http_500",
+        "category_response_failure",
+        "fragment_500",
+        "internal_error",
+        "network_partition",
+        "not_found",
+        "cart_storage_unavailable_empty_cart",
+        "service_5xx",
+        "service_error",
+        "upstream_unavailable"
+      ]
+    },
+    {
+      "name": "latency",
+      "description": "The operation succeeds too slowly or degrades due to latency or resource pressure.",
+      "maps_from": [
+        "image_latency_degradation",
+        "latency",
+        "latency_degradation"
+      ]
+    },
+    {
+      "name": "data",
+      "description": "The payload, state, or response body is empty, malformed, truncated, corrupted, or otherwise unusable.",
+      "maps_from": [
+        "checkout_http_response_failure",
+        "data_corruption",
+        "malformed_or_truncated_request_body",
+        "minicart_empty_or_unusable_payload",
+        "response_shape_invalid",
+        "undecodable_product_catalog_response"
+      ]
+    },
+    {
+      "name": "contract",
+      "description": "The producer and consumer disagree on a schema, event, cookie, or interface contract.",
+      "maps_from": [
+        "cart_cookie_key_mismatch",
+        "cart_cookie_parse_mismatch",
+        "cart_event_listener_failure",
+        "cart_item_unsupported_media_type",
+        "checkout_addtocart_http_failure",
+        "custom_event_name_mismatch",
+        "missing_cart_update_event_after_delete",
+        "schema_drift",
+        "store_selection_event_mismatch",
+        "store_selection_listener_failure"
+      ]
+    },
+    {
+      "name": "auth",
+      "description": "Authorization or authentication failure blocks the flow.",
+      "maps_from": [
+        "authentication_error",
+        "http_401_checkout_rejection"
+      ]
+    },
+    {
+      "name": "rate_limit",
+      "description": "Rate limiting blocks the operation.",
+      "maps_from": [
+        "http_429_rate_limit",
+        "rate_limit_error"
+      ]
+    },
+    {
+      "name": "asset",
+      "description": "A static asset or browser/runtime loading surface is blocked, missing, or served incorrectly.",
+      "maps_from": [
+        "csp_script_blocked",
+        "module_script_bad_mime",
+        "static_asset_missing"
+      ]
+    },
+    {
+      "name": "compound",
+      "description": "Multiple independent faults materially contribute. Use this only when no single fault is sufficient as the primary root cause.",
+      "maps_from": [
+        "compound",
+        "compound_performance_degradation_and_cart_storage_failure",
+        "compound_recommendation_response_failure_and_ad_gc_degradation"
+      ]
+    }
+  ]
+}

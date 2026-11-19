@@ -1,0 +1,14 @@
+先看 平台先读.md：含必改 JSON/环境变量表、0–14 运行顺序、通过条件、SCVD/RLSD 最短命令。
+详细说明见 RUNBOOK.md；实现差异见 IMPLEMENTATION.md；检查证据见 reports/代码复查报告.md。
+
+需要平台确认并填写：
+1. Linux/CUDA/NCCL/依赖环境，GPU 型号/显存、训练节点主机 RAM；默认 8 卡训练 + 8 卡采样。
+2. 训练与采样节点共用、相同绝对路径的权重发布/output 根目录与共享盘容量。
+3. 四个 data_roots、初始 9B 模型路径、frozen_data_manifest 新路径。
+4. 8 个采样 endpoints；跨节点端口连通、RUNNER_API_KEY secret 与绑定地址。
+5. SCVD 强教师 URL/model/固定版本，API key secret、思考开关与实际 completion_tokens 计数。
+6. 原项目逐 ID split 文件及原工具/评分实现（若要求与原 HTML 严格对齐）。当前重建只确认数量/边际。
+7. 历史检查点保留数量、val 选择方案，以及最后冻结 test 的执行安排。
+
+收到后先校验包、复制并修改包外配置、下载/冻结数据、做 CPU 检查，再决定平台 GPU 验收与正式运行。
+交付方未启动训练、真实模型推理服务、9B/27B 权重加载或教师调用。

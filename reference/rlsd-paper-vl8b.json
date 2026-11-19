@@ -1,0 +1,33 @@
+{
+  "status": "PAPER_SPECIFICATION_NOT_TRAINED",
+  "paper": "https://arxiv.org/html/2604.03128v1",
+  "base": "Qwen/Qwen3-VL-8B-Instruct",
+  "dataset": "iieycx/rlsd-train-MMFineReason-123K",
+  "dataset_revision": "74982104d700775555f6770072659b82e1bfc623",
+  "context": 8192,
+  "prompt": 4096,
+  "response": 4096,
+  "batch": 256,
+  "rollouts_per_prompt": 8,
+  "temperature": 1.0,
+  "lr": 1e-06,
+  "clip_low": 0.2,
+  "clip_high": 0.28,
+  "kl_loss": false,
+  "entropy_loss": false,
+  "lambda_start": 0.5,
+  "lambda_decay_steps": 50,
+  "evidence_clip": 0.2,
+  "teacher_sync_steps": 10,
+  "teacher_frozen_between_sync": true,
+  "teacher_privilege": "Final ground-truth answer, not teacher reasoning trace",
+  "updates": 200,
+  "paper_hardware": "4 nodes x 8 H200 140GB = 32 H200",
+  "benchmarks": [
+    "MMMU",
+    "MathVista",
+    "MathVision",
+    "ZeroBench",
+    "WeMath"
+  ]
+}

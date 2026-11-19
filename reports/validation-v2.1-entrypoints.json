@@ -1,0 +1,102 @@
+{
+  "success": true,
+  "checks": [
+    {
+      "check": "prepare --help",
+      "returncode": 0
+    },
+    {
+      "check": "doctor --help",
+      "returncode": 0
+    },
+    {
+      "check": "worker --help",
+      "returncode": 0
+    },
+    {
+      "check": "collect --help",
+      "returncode": 0
+    },
+    {
+      "check": "encode --help",
+      "returncode": 0
+    },
+    {
+      "check": "train --help",
+      "returncode": 0
+    },
+    {
+      "check": "evaluate --help",
+      "returncode": 0
+    },
+    {
+      "check": "report --help",
+      "returncode": 0
+    },
+    {
+      "check": "control --help",
+      "returncode": 0
+    },
+    {
+      "check": "qualify --help",
+      "returncode": 0
+    },
+    {
+      "check": "scvd world=8 plan",
+      "returncode": 0
+    },
+    {
+      "check": "scvd world=16 plan",
+      "returncode": 0
+    },
+    {
+      "check": "rlsd world=8 plan",
+      "returncode": 0
+    },
+    {
+      "check": "grpo world=8 plan",
+      "returncode": 0
+    },
+    {
+      "check": "scvd export plan",
+      "returncode": 0
+    },
+    {
+      "check": "rlsd export plan",
+      "returncode": 0
+    },
+    {
+      "check": "collection plan",
+      "returncode": 0
+    },
+    {
+      "check": "evaluation plan",
+      "returncode": 0
+    },
+    {
+      "check": "download freeze plan",
+      "returncode": 0
+    },
+    {
+      "check": "zero update qualification plan",
+      "returncode": 0
+    },
+    {
+      "check": "check_cpu.sh syntax",
+      "returncode": 0
+    },
+    {
+      "check": "start_workers.sh syntax",
+      "returncode": 0
+    },
+    {
+      "check": "train_rlsd.sh syntax",
+      "returncode": 0
+    },
+    {
+      "check": "train_scvd.sh syntax",
+      "returncode": 0
+    }
+  ],
+  "actions": "help, plans and bash syntax only; no worker, model inference, download, training, GPU qualification or optimizer update"
+}

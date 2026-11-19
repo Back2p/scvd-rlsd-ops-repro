@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-17",
+  "docker_image": "pytorch/pytorch:2.8.0-cuda12.8-cudnn9-devel",
+  "digest": "sha256:a7103283ea7113e10ae5d014bd2342acebda0bc53164b2f7b1dd6eb7a766bdb6",
+  "official_source": "https://hub.docker.com/layers/pytorch/pytorch/2.8.0-cuda12.8-cudnn9-devel/images/sha256-a7103283ea7113e10ae5d014bd2342acebda0bc53164b2f7b1dd6eb7a766bdb6?tab=layers",
+  "source_page_checked": true,
+  "image_pulled_or_built_locally": false,
+  "gpu_runtime_validated": false,
+  "comparison_model": "Qwen/Qwen3.5-27B",
+  "comparison_model_revision": "fc05daec18b0a78c049392ed2e771dde82bdf654",
+  "comparison_model_metadata_source": "https://huggingface.co/api/models/Qwen/Qwen3.5-27B",
+  "comparison_weights_downloaded": false
+}

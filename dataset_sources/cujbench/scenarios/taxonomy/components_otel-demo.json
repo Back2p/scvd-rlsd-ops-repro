@@ -1,0 +1,89 @@
+{
+  "field": "root_cause.component",
+  "scope": "app",
+  "app": "otel-demo",
+  "version": 1,
+  "semantics": "Use the primary owning subsystem within the otel-demo app. Do not use endpoint paths or detailed mechanisms as the component value.",
+  "values": [
+    {
+      "name": "none",
+      "description": "No faulty component; healthy baseline.",
+      "maps_from": [
+        "none"
+      ]
+    },
+    {
+      "name": "checkout",
+      "description": "Checkout API and checkout flow orchestration.",
+      "maps_from": [
+        "checkout API",
+        "checkout API response path",
+        "checkoutservice"
+      ]
+    },
+    {
+      "name": "cart",
+      "description": "Cart service and cart persistence/state behavior.",
+      "maps_from": [
+        "cart",
+        "cartservice",
+        "product catalog API path and cart service storage"
+      ]
+    },
+    {
+      "name": "catalog",
+      "description": "Product catalog and product listing/detail data surfaces.",
+      "maps_from": [
+        "product catalog API response path",
+        "productcatalogservice"
+      ]
+    },
+    {
+      "name": "payment",
+      "description": "Payment processing and payment service calls.",
+      "maps_from": [
+        "paymentservice"
+      ]
+    },
+    {
+      "name": "recommendation",
+      "description": "Recommendation generation and recommendation-serving APIs.",
+      "maps_from": [
+        "recommendation API with ad service degradation",
+        "recommendationservice"
+      ]
+    },
+    {
+      "name": "ads",
+      "description": "Ad content and ad service behavior.",
+      "maps_from": [
+        "adservice"
+      ]
+    },
+    {
+      "name": "currency",
+      "description": "Currency selection and exchange-rate conversion flows.",
+      "maps_from": [
+        "currencyservice"
+      ]
+    },
+    {
+      "name": "reviews",
+      "description": "Product reviews and AI assistant/review answering surfaces.",
+      "maps_from": [
+        "llmservice",
+        "product AI assistant API endpoint",
+        "product AI assistant API path",
+        "productservice"
+      ]
+    },
+    {
+      "name": "platform",
+      "description": "Shared browser, proxy, asset-delivery, or infrastructure surfaces not owned by a single business subsystem.",
+      "maps_from": [
+        "frontend-proxy",
+        "product image delivery path"
+      ]
+    }
+  ]
+}

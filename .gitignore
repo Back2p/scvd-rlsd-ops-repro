@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+.venv/
+data/
+checkpoints/
+.env
+datasets/
+dataset_sources/*.tar.gz
+
+# Local secrets, machine configuration, and runtime artifacts.
+.env.*
+!.env.example
+/configs/*.local.json
+/runs/
+/outputs/
+/models/
+*.safetensors
+*.pt
+*.pth
+*.log
+*.partial
+.DS_Store

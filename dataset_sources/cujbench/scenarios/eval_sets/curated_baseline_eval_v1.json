@@ -1,0 +1,40 @@
+{
+  "name": "curated_baseline_eval_v1",
+  "intent": "Curated 25-scenario eval slice for baseline benchmarking across otel-demo and Tractor Store.",
+  "sources": {
+    "registry": "scenarios/registry.json",
+    "ground_truth_pattern": "scenarios/*/ground_truth/root_cause.json",
+    "taxonomy_overrides": [
+      "scenarios/taxonomy/root_cause_types.json",
+      "scenarios/taxonomy/components_otel-demo.json",
+      "scenarios/taxonomy/components_tractor-store.json"
+    ]
+  },
+  "scenarios": [
+    "SCEN-001-baseline",
+    "SCEN-003-checkout-delay-10s",
+    "SCEN-004-product-catalog-null",
+    "SCEN-005-cart-failure",
+    "SCEN-007-payment-unreachable",
+    "SCEN-015-image-slow-5s",
+    "SCEN-022-cart-failure-plus-delay",
+    "SCEN-024-checkout-truncate-json",
+    "SCEN-033-kafka-plus-checkout-401",
+    "SCEN-043-browse-recommendation-cache-failure",
+    "SCEN-049-reviews-llm-rate-limit",
+    "SCEN-051-reviews-ai-assistant-delay-5s",
+    "SCEN-057-currency-http-503",
+    "SCEN-100-ts-baseline",
+    "SCEN-101-ts-decide-bundle-blocked",
+    "SCEN-107-ts-explore-schema-drift",
+    "SCEN-109-ts-explore-json-invalid",
+    "SCEN-108-ts-minicart-schema-drift",
+    "SCEN-113-ts-checkout-fragment-500",
+    "SCEN-114-ts-minicart-delay",
+    "SCEN-115-ts-explore-fragment-delay",
+    "SCEN-117-ts-checkout-js-bad-mime",
+    "SCEN-119-ts-csp-script-blocked",
+    "SCEN-124-ts-checkout-store-event-wrong-name",
+    "SCEN-126-ts-cart-cookie-sep-mutation"
+  ]
+}

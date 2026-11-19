@@ -1,0 +1,37 @@
+{
+  "status": "PAPER_SPECIFICATION_NOT_TRAINED",
+  "paper": "https://arxiv.org/html/2609.38812v1",
+  "student": "Qwen/Qwen3.5-9B",
+  "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+  "teacher": "GLM-5.2",
+  "original_pool_tasks": 11806,
+  "matched_9b_examples": 7419,
+  "data_rule": "FTD and SCVD verifier-passing task intersection; exact released task list unverified",
+  "epochs": 3,
+  "optimizer": "AdamW",
+  "learning_rate": 1e-05,
+  "lr_scheduler_type": "cosine",
+  "warmup_ratio": 0.03,
+  "max_sequence_length": 32768,
+  "per_device_train_batch_size": 1,
+  "gradient_accumulation_steps": 8,
+  "global_batch_size": 64,
+  "weight_decay": 0.01,
+  "max_grad_norm": 1.0,
+  "full_parameter_training": true,
+  "gradient_checkpointing": true,
+  "deepspeed": "ZeRO-3 Offload",
+  "paper_hardware": "8 x NVIDIA H200",
+  "collection_and_eval": {
+    "temperature": 1.0,
+    "top_k": 20,
+    "top_p": 0.95,
+    "max_generation_tokens": 32768
+  },
+  "eval": [
+    "TerminalBench2.1 / Terminus-2",
+    "SWE-bench Verified / OpenHands"
+  ],
+  "independent_eval_runs": 3,
+  "loss_targets": "Only teacher assistant continuation; student prefix and tool observations masked"
+}
